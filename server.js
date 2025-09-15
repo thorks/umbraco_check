@@ -53,36 +53,64 @@ app.get('/', (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Domain CSV Checker</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons@2.40.0/dist/iconfont/tabler-icons.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
     <style>
-        .upload-section {
-            border: 2px dashed var(--tblr-border-color);
-            border-radius: 0.5rem;
-            padding: 2rem;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
             text-align: center;
-            margin-bottom: 1.5rem;
-            transition: all 0.2s ease;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .upload-section {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
             cursor: pointer;
-            background: var(--tblr-bg-surface);
-            min-height: 120px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
         }
 
         .upload-section:hover {
-            border-color: var(--tblr-primary);
-            background: var(--tblr-bg-surface-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #764ba2;
+            background: rgba(102, 126, 234, 0.05);
+            transform: translateY(-2px);
         }
 
         .upload-section.dragover {
-            border-color: var(--tblr-primary);
-            background: var(--tblr-bg-primary-subtle);
+            border-color: #764ba2;
+            background: rgba(102, 126, 234, 0.1);
             transform: scale(1.02);
         }
 
@@ -90,76 +118,236 @@ app.get('/', (req, res) => {
             display: none;
         }
 
+        .upload-text {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn.secondary {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .btn.danger {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+        }
+
+        .file-info {
+            margin: 15px 0;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 15px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .progress-container {
+            display: none;
+            margin: 30px 0;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 25px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 15px;
+        }
+
+        .status {
+            text-align: center;
+            margin: 15px 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .stat-item {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            min-width: 120px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .results h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
         .domain-list {
-            max-height: 400px;
+            max-height: 300px;
             overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            background: #f9f9f9;
+            font-family: 'SF Mono', Consolas, monospace;
+            font-size: 0.9rem;
         }
 
         .domain-item {
-            padding: 0.75rem 0;
-            border-bottom: 1px solid var(--tblr-border-color);
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
         }
 
         .domain-item:last-child {
             border-bottom: none;
         }
 
+        .domain-info {
+            flex: 1;
+            margin-right: 15px;
+        }
+
+        .domain-name {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .domain-evidence {
+            font-size: 0.8rem;
+            color: #666;
+            font-style: italic;
+            line-height: 1.3;
+        }
+
+        .domain-status {
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+            background: #28a745;
+            color: white;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+            align-items: center;
+        }
+
+        .method-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .method-selector label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .method-selector select {
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-weight: 600;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
         .loading-spinner {
             display: inline-block;
-            width: 1rem;
-            height: 1rem;
-            border: 2px solid var(--tblr-border-color);
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            border-top-color: var(--tblr-primary);
+            border-top-color: white;
             animation: spin 1s ease-in-out infinite;
-            margin-right: 0.5rem;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem 1rem;
-        }
-
-        .empty-state-icon {
-            margin-bottom: 1rem;
-        }
-
-        .empty-state-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .empty-state-subtitle {
-            color: var(--tblr-secondary);
-            margin-bottom: 0;
-        }
-
-        .nav-link.active {
-            background-color: var(--tblr-primary);
-            color: white !important;
-            border-radius: 0.375rem;
-        }
-
-        .nav-link.active:hover {
-            background-color: var(--tblr-primary);
-            color: white !important;
-        }
-
-        .navbar-nav .nav-link {
-            padding: 0.5rem 1rem;
-            margin: 0 0.25rem;
-            border-radius: 0.375rem;
-            transition: all 0.2s ease;
-        }
-
-        .navbar-nav .nav-link:hover {
-            background-color: var(--tblr-bg-surface-hover);
-        }
-
-        .navbar-brand {
-            font-size: 1.25rem;
-            font-weight: 600;
+            margin-right: 10px;
         }
 
         @keyframes spin {
@@ -168,533 +356,69 @@ app.get('/', (req, res) => {
     </style>
 </head>
 <body>
-    <!-- Navigation Bar -->
-    <header class="navbar navbar-expand-md navbar-light d-print-none border-bottom">
-        <div class="container-xl">
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
-                <i class="ti ti-world me-2"></i>
-                Umbraco CMS Detector
-            </h1>
-            <div class="navbar-nav flex-row order-md-last">
-                <div class="nav-item dropdown">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleTheme()">
-                        <i class="ti ti-sun" id="themeIcon"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="collapse navbar-collapse" id="navbar-menu">
-                <div class="d-flex flex-column flex-md-row flex-fill align-items-stretch align-items-md-center">
-                    <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" onclick="showHomePage()">
-                                <i class="ti ti-home me-2"></i>
-                                Home
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" onclick="showDomainsPage()">
-                                <i class="ti ti-list me-2"></i>
-                                View Domains
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <div class="page-wrapper">
-        <!-- Home Page -->
-        <div class="container-xl" id="homePage">
-            <div class="row justify-content-center">
-                <div class="col-lg-10 col-xl-9">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="ti ti-upload me-2"></i>
-                                Upload CSV File
-                            </h3>
-                            <div class="card-subtitle">Advanced Umbraco detection with evidence analysis</div>
-                        </div>
-                        <div class="card-body">
-                            <div class="upload-section" id="uploadSection">
-                                <div class="text-muted mb-3">
-                                    <i class="ti ti-upload me-2"></i>
-                                    Drag & drop your CSV file here or click to browse
-                                </div>
-                                <small class="text-muted d-block mb-3">Note: Domains will be read from the 3rd column</small>
-                                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
-                                    <i class="ti ti-file me-2"></i>
-                                    Choose CSV File
-                                </button>
-                                <input type="file" id="fileInput" accept=".csv" />
-                            </div>
-
-                            <div id="fileInfo" class="alert alert-info" style="display: none;"></div>
-                            <div id="alerts"></div>
-
-                            <div class="row g-3 align-items-center justify-content-center my-4">
-                                <div class="col-auto">
-                                    <label for="checkMethod" class="form-label mb-0">Detection Method:</label>
-                                </div>
-                                <div class="col-auto">
-                                    <select id="checkMethod" class="form-select">
-                                        <option value="http">🚀 Lightweight HTTP (Recommended)</option>
-                                    </select>
-                                </div>
-                                <div class="col-auto">
-                                    <button id="checkBtn" class="btn btn-success" style="display: none;" onclick="startChecking()">
-                                        <i class="ti ti-play me-2"></i>
-                                        Start Checking Domains
-                                    </button>
-                                    <button id="stopBtn" class="btn btn-danger" style="display: none;" onclick="stopChecking()">
-                                        <i class="ti ti-square me-2"></i>
-                                        Stop Checking
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="progress-container" id="progressContainer" style="display: none;">
-                                <div class="progress mb-3">
-                                    <div class="progress-bar" id="progressFill" role="progressbar" style="width: 0%"></div>
-                                </div>
-                                <div class="text-center mb-3">
-                                    <div class="status" id="status"></div>
-                                    <div class="text-muted small">Progress: <span id="progressText">0%</span></div>
-                                </div>
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <div class="card card-sm">
-                                            <div class="card-body text-center">
-                                                <div class="text-h3 mb-1" id="totalCount">0</div>
-                                                <div class="text-muted">Total</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="card card-sm">
-                                            <div class="card-body text-center">
-                                                <div class="text-h3 mb-1" id="checkedCount">0</div>
-                                                <div class="text-muted">Checked</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="card card-sm">
-                                            <div class="card-body text-center">
-                                                <div class="text-h3 mb-1" id="successCount">0</div>
-                                                <div class="text-muted">Success (200)</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="results" id="results" style="display: none;">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h3 class="card-title">
-                                            <i class="ti ti-check me-2"></i>
-                                            Umbraco CMS Detected
-                                        </h3>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="domain-list" id="successList">
-                                            <div class="empty-state" id="emptyState" style="display: none;">
-                                                <div class="empty-state-icon">
-                                                    <i class="ti ti-search text-muted" style="font-size: 3rem;"></i>
-                                                </div>
-                                                <p class="empty-state-title">No domains found yet</p>
-                                                <p class="empty-state-subtitle">Upload a CSV file and start checking to see results here.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="card-footer">
-                                        <div class="d-flex gap-2 justify-content-center">
-                                            <button class="btn btn-secondary" id="downloadBtn" onclick="downloadResults()">
-                                                <i class="ti ti-download me-2"></i>
-                                                Download Umbraco Results CSV
-                                            </button>
-                                            <button class="btn btn-info" id="emailExtractBtn" onclick="proceedToEmailExtraction()" style="display: none;">
-                                                <i class="ti ti-mail me-2"></i>
-                                                Proceed with Email Extraction
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Domains Page -->
-        <div class="container-xl" id="domainsPage" style="display: none;">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h3 class="card-title">
-                                        <i class="ti ti-list me-2"></i>
-                                        Domain Results
-                                    </h3>
-                                    <div class="card-subtitle">View and manage detected Umbraco domains with company information</div>
-                                </div>
-                                <div class="btn-group">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="refreshDomainsData()">
-                                        <i class="ti ti-refresh me-2"></i>
-                                        Refresh
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Progress indicator for domains page -->
-                        <div class="card-body border-bottom" id="domainsProgressIndicator" style="display: none;">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div class="d-flex align-items-center">
-                                    <div class="loading-spinner me-3"></div>
-                                    <div>
-                                        <div class="fw-bold" id="domainsProgressText">Processing domains...</div>
-                                        <div class="text-muted small" id="domainsProgressDetails">Checking for Umbraco CMS</div>
-                                    </div>
-                                </div>
-                                <div class="text-end">
-                                    <div class="fw-bold text-primary" id="domainsProgressCount">0/0</div>
-                                    <div class="text-muted small">Domains checked</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div id="domainsTableContainer">
-                                <div class="empty-state" id="domainsEmptyState">
-                                    <div class="empty-state-icon">
-                                        <i class="ti ti-search text-muted" style="font-size: 3rem;"></i>
-                                    </div>
-                                    <p class="empty-state-title">No domains found yet</p>
-                                    <p class="empty-state-subtitle">Upload a CSV file and start checking to see results here.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="container">
+        <h1>🌐 Umbraco CMS Detector</h1>
+        <div class="subtitle">Advanced Umbraco detection with evidence analysis</div>
         
-        <!-- Footer -->
-        <footer class="footer footer-transparent d-print-none">
-            <div class="container-xl">
-                <div class="row text-center align-items-center flex-row-reverse">
-                    <div class="col-12 col-lg-auto mt-3 mt-lg-0">
-                        <ul class="list-inline list-inline-dots mb-0">
-                            <li class="list-inline-item">
-                                Built with <i class="ti ti-heart text-danger"></i> using Tabler.io
-                            </li>
-                        </ul>
-                    </div>
+        <div class="upload-section" id="uploadSection">
+            <div class="upload-text">📁 Drag & drop your CSV file here or click to browse<br><small>Note: Domains will be read from the 3rd column</small></div>
+            <button class="btn" onclick="document.getElementById('fileInput').click()">Choose CSV File</button>
+            <input type="file" id="fileInput" accept=".csv" />
+        </div>
+
+        <div id="fileInfo" class="file-info"></div>
+        <div id="alerts"></div>
+
+        <div class="controls">
+            <div class="method-selector">
+                <label for="checkMethod">Detection Method:</label>
+                <select id="checkMethod">
+                    <option value="http">🚀 Lightweight HTTP (Recommended)</option>
+                </select>
+            </div>
+            <button id="checkBtn" class="btn" style="display: none;" onclick="startChecking()">
+                🚀 Start Checking Domains
+            </button>
+            <button id="stopBtn" class="btn danger" style="display: none;" onclick="stopChecking()">
+                ⏹️ Stop Checking
+            </button>
+        </div>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="status" id="status"></div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalCount">0</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="checkedCount">0</div>
+                    <div class="stat-label">Checked</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="successCount">0</div>
+                    <div class="stat-label">Success (200)</div>
                 </div>
             </div>
-        </footer>
+        </div>
+
+        <div class="results" id="results">
+            <h3>✅ Umbraco CMS Detected</h3>
+            <div class="domain-list" id="successList"></div>
+            <div class="controls">
+                <button class="btn secondary" id="downloadBtn" onclick="downloadResults()">
+                    💾 Download Umbraco Results CSV
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>
         let uploadedFileName = '';
         let checkJobId = '';
-
-        // Theme management
-        function toggleTheme() {
-            const html = document.documentElement;
-            const themeIcon = document.getElementById('themeIcon');
-            
-            if (html.getAttribute('data-bs-theme') === 'dark') {
-                html.setAttribute('data-bs-theme', 'light');
-                themeIcon.className = 'ti ti-sun';
-                localStorage.setItem('theme', 'light');
-            } else {
-                html.setAttribute('data-bs-theme', 'dark');
-                themeIcon.className = 'ti ti-moon';
-                localStorage.setItem('theme', 'dark');
-            }
-        }
-
-        // Initialize theme from localStorage
-        function initTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            const html = document.documentElement;
-            const themeIcon = document.getElementById('themeIcon');
-            
-            html.setAttribute('data-bs-theme', savedTheme);
-            themeIcon.className = savedTheme === 'dark' ? 'ti ti-moon' : 'ti ti-sun';
-        }
-
-        // Initialize theme when page loads
-        initTheme();
-        
-        // Set initial page
-        showHomePage();
-
-        // Global storage for domains data
-        let domainsData = [];
-        let currentJobId = '';
-        
-        // Update progress on domains page
-        function updateDomainsPageProgress(progress) {
-            const progressIndicator = document.getElementById('domainsProgressIndicator');
-            const progressText = document.getElementById('domainsProgressText');
-            const progressDetails = document.getElementById('domainsProgressDetails');
-            const progressCount = document.getElementById('domainsProgressCount');
-            
-            if (!progressIndicator || !progressText || !progressDetails || !progressCount) {
-                return; // Elements don't exist, skip update
-            }
-            
-            // Show progress indicator
-            progressIndicator.style.display = 'block';
-            
-            // Update progress text
-            if (progress.currentDomain) {
-                progressText.textContent = 'Checking: ' + progress.currentDomain;
-                progressDetails.textContent = 'Processing domain for Umbraco CMS';
-            } else {
-                if (progress.status === 'completed') {
-                    progressText.textContent = 'Domain checking completed!';
-                    progressDetails.textContent = progress.successCount + ' domains found with Umbraco CMS';
-                } else if (progress.status === 'stopped') {
-                    progressText.textContent = 'Domain checking stopped';
-                    progressDetails.textContent = 'Process was stopped by user';
-                } else {
-                    progressText.textContent = 'Processing domains...';
-                    progressDetails.textContent = 'Checking for Umbraco CMS';
-                }
-            }
-            
-            // Update progress count
-            progressCount.textContent = progress.checked + '/' + progress.total;
-            
-            // Hide progress indicator when completed
-            if (progress.status === 'completed' || progress.status === 'stopped') {
-                setTimeout(() => {
-                    if (progressIndicator) {
-                        progressIndicator.style.display = 'none';
-                    }
-                }, 3000); // Hide after 3 seconds
-            }
-        }
-
-        // Global notification function
-        function showGlobalNotification(message, type = 'info') {
-            // Create notification element if it doesn't exist
-            let notificationContainer = document.getElementById('globalNotificationContainer');
-            if (!notificationContainer) {
-                notificationContainer = document.createElement('div');
-                notificationContainer.id = 'globalNotificationContainer';
-                notificationContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
-                document.body.appendChild(notificationContainer);
-            }
-            
-            const notification = document.createElement('div');
-            notification.className = 'alert alert-' + type + ' alert-dismissible';
-            notification.innerHTML = message + '<a href="#" class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>';
-            
-            notificationContainer.appendChild(notification);
-            
-            // Auto-remove after 5 seconds
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 5000);
-        }
-
-        // Refresh domains data from server
-        async function refreshDomainsData() {
-            if (!currentJobId) {
-                showGlobalNotification('No active job to refresh from.', 'warning');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/progress/' + currentJobId);
-                if (response.ok) {
-                    const progress = await response.json();
-                    if (progress.successfulDomainsWithEvidence && progress.successfulDomainsWithEvidence.length > 0) {
-                        domainsData = progress.successfulDomainsWithEvidence;
-                        loadDomainsData();
-                        showGlobalNotification('Data refreshed successfully!', 'success');
-                    } else {
-                        showGlobalNotification('No domain data available to refresh.', 'info');
-                    }
-                } else {
-                    showGlobalNotification('Failed to refresh data from server.', 'danger');
-                }
-            } catch (error) {
-                showGlobalNotification('Error refreshing data: ' + error.message, 'danger');
-            }
-        }
-
-        // Load domains data and display in table
-        function loadDomainsData() {
-            // Check if we're on the domains page and elements exist
-            const domainsPage = document.getElementById('domainsPage');
-            const emptyState = document.getElementById('domainsEmptyState');
-            const tableContainer = document.getElementById('domainsTableContainer');
-            const progressIndicator = document.getElementById('domainsProgressIndicator');
-            
-            if (!domainsPage || !emptyState || !tableContainer) {
-                console.log('Domains page elements not found, skipping loadDomainsData');
-                return;
-            }
-            
-            // Hide progress indicator when loading data
-            if (progressIndicator) {
-                progressIndicator.style.display = 'none';
-            }
-            
-            if (domainsData.length === 0) {
-                // No data available
-                emptyState.style.display = 'block';
-                tableContainer.innerHTML = '';
-                
-                // Update empty state message
-                emptyState.innerHTML = 
-                    '<div class="empty-state-icon">' +
-                        '<i class="ti ti-search text-muted" style="font-size: 3rem;"></i>' +
-                    '</div>' +
-                    '<p class="empty-state-title">No domains found yet</p>' +
-                    '<p class="empty-state-subtitle">Go to the Home page, upload a CSV file and start checking to see results here.</p>' +
-                    '<div class="mt-3">' +
-                        '<button class="btn btn-primary" onclick="showHomePage()">' +
-                            '<i class="ti ti-home me-2"></i>' +
-                            'Go to Home' +
-                        '</button>' +
-                    '</div>';
-                return;
-            }
-
-            // Hide empty state
-            emptyState.style.display = 'none';
-
-            // Create Tabler data table
-            const tableHTML = 
-                '<div class="table-responsive">' +
-                    '<table class="table table-vcenter card-table">' +
-                        '<thead>' +
-                            '<tr>' +
-                                '<th>Domain</th>' +
-                                '<th>Company Name</th>' +
-                                '<th>Evidence</th>' +
-                                '<th>Status</th>' +
-                                '<th>Actions</th>' +
-                            '</tr>' +
-                        '</thead>' +
-                        '<tbody>' +
-                            domainsData.map(item => 
-                                '<tr>' +
-                                    '<td>' +
-                                        '<div class="d-flex py-1 align-items-center">' +
-                                            '<span class="avatar me-2 bg-primary-lt">' +
-                                                '<i class="ti ti-world"></i>' +
-                                            '</span>' +
-                                            '<div class="flex-fill">' +
-                                                '<div class="font-weight-medium">' + item.domain + '</div>' +
-                                            '</div>' +
-                                        '</div>' +
-                                    '</td>' +
-                                    '<td>' +
-                                        '<div class="text-muted">' + (item.companyName || 'Not detected') + '</div>' +
-                                    '</td>' +
-                                    '<td>' +
-                                        '<div class="text-muted small">' + item.evidence.join('; ') + '</div>' +
-                                    '</td>' +
-                                    '<td>' +
-                                        '<span class="badge bg-success">Umbraco ✓</span>' +
-                                    '</td>' +
-                                    '<td>' +
-                                        '<div class="btn-list">' +
-                                            '<a href="https://' + item.domain + '" target="_blank" class="btn btn-sm btn-outline-primary">' +
-                                                '<i class="ti ti-external-link me-1"></i>' +
-                                                'Visit' +
-                                            '</a>' +
-                                        '</div>' +
-                                    '</td>' +
-                                '</tr>'
-                            ).join('') +
-                        '</tbody>' +
-                    '</table>' +
-                '</div>' +
-                '<div class="d-flex justify-content-between align-items-center mt-3">' +
-                    '<div class="text-muted">' +
-                        'Showing ' + domainsData.length + ' domains' +
-                    '</div>' +
-                    '<div class="btn-list">' +
-                        '<button class="btn btn-primary" onclick="downloadResults()">' +
-                            '<i class="ti ti-download me-2"></i>' +
-                            'Download CSV' +
-                        '</button>' +
-                        '<button class="btn btn-info" onclick="proceedToEmailExtraction()">' +
-                            '<i class="ti ti-mail me-2"></i>' +
-                            'Email Extraction' +
-                        '</button>' +
-                    '</div>' +
-                '</div>';
-
-            tableContainer.innerHTML = tableHTML;
-        }
-
-        // Navigation functions
-        function showHomePage() {
-            const homePage = document.getElementById('homePage');
-            const domainsPage = document.getElementById('domainsPage');
-            
-            if (!homePage || !domainsPage) {
-                console.error('Required page elements not found');
-                return;
-            }
-            
-            homePage.style.display = 'block';
-            domainsPage.style.display = 'none';
-            
-            // Update navigation active states
-            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-            const homeLink = document.querySelector('.nav-link[onclick="showHomePage()"]');
-            if (homeLink) {
-                homeLink.classList.add('active');
-            }
-        }
-
-        function showDomainsPage() {
-            const homePage = document.getElementById('homePage');
-            const domainsPage = document.getElementById('domainsPage');
-            
-            if (!homePage || !domainsPage) {
-                console.error('Required page elements not found');
-                return;
-            }
-            
-            homePage.style.display = 'none';
-            domainsPage.style.display = 'block';
-            
-            // Update navigation active states
-            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-            const domainsLink = document.querySelector('.nav-link[onclick="showDomainsPage()"]');
-            if (domainsLink) {
-                domainsLink.classList.add('active');
-            }
-            
-            // Load domains data if available
-            loadDomainsData();
-            
-            // Show notification if there's fresh data
-            if (domainsData.length > 0) {
-                showGlobalNotification('Loaded ' + domainsData.length + ' domains. Data is up to date.', 'info');
-            }
-        }
 
         // File upload handling
         const uploadSection = document.getElementById('uploadSection');
@@ -703,15 +427,10 @@ app.get('/', (req, res) => {
         const checkBtn = document.getElementById('checkBtn');
         const alerts = document.getElementById('alerts');
 
-        function showAlert(message, type = 'danger') {
+        function showAlert(message, type = 'error') {
             const alert = document.createElement('div');
-            // Map 'error' to 'danger' for Tabler.io compatibility
-            const alertType = type === 'error' ? 'danger' : type;
-            alert.className = \`alert alert-\${alertType} alert-dismissible\`;
-            alert.innerHTML = \`
-                \${message}
-                <a href="#" class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
-            \`;
+            alert.className = \`alert \${type}\`;
+            alert.textContent = message;
             alerts.appendChild(alert);
             setTimeout(() => alert.remove(), 5000);
         }
@@ -760,7 +479,7 @@ app.get('/', (req, res) => {
 
                 if (response.ok) {
                     uploadedFileName = result.filename;
-                    fileInfo.innerHTML = \`<i class="ti ti-file me-2"></i><strong>\${file.name}</strong> - \${result.domainCount} domains loaded\`;
+                    fileInfo.innerHTML = \`📄 <strong>\${file.name}</strong> - \${result.domainCount} domains loaded\`;
                     fileInfo.style.display = 'block';
                     checkBtn.style.display = 'inline-block';
                     showAlert(\`File uploaded successfully! \${result.domainCount} domains found.\`, 'success');
@@ -794,7 +513,6 @@ app.get('/', (req, res) => {
 
                 if (response.ok) {
                     checkJobId = result.jobId;
-                    currentJobId = result.jobId; // Store globally for refresh functionality
                     document.getElementById('progressContainer').style.display = 'block';
                     document.getElementById('checkBtn').style.display = 'none';
                     document.getElementById('stopBtn').style.display = 'inline-block';
@@ -852,57 +570,21 @@ app.get('/', (req, res) => {
         }
 
         function updateProgress(progress) {
-            // Store the data globally regardless of current page
-            if (progress.successfulDomainsWithEvidence && progress.successfulDomainsWithEvidence.length > 0) {
-                domainsData = progress.successfulDomainsWithEvidence;
-            }
-            
-            // Check if we're on the home page
-            const homePage = document.getElementById('homePage');
-            if (!homePage || homePage.style.display === 'none') {
-                // We're not on the home page, update domains page progress if it exists
-                updateDomainsPageProgress(progress);
-                
-                // Show global notification for completion
-                if (progress.status === 'completed') {
-                    const message = 'Domain checking completed! ' + progress.successCount + ' domains found. Go to "View Domains" to see results.';
-                    showGlobalNotification(message, 'success');
-                } else if (progress.status === 'stopped') {
-                    showGlobalNotification('Domain checking stopped by user.', 'warning');
-                }
-                return;
-            }
-
             const progressFill = document.getElementById('progressFill');
             const status = document.getElementById('status');
             const checkedCount = document.getElementById('checkedCount');
             const successCount = document.getElementById('successCount');
             const successList = document.getElementById('successList');
             const results = document.getElementById('results');
-            const emptyState = document.getElementById('emptyState');
-
-            // Check if all required elements exist before proceeding
-            if (!progressFill || !status || !checkedCount || !successCount || !successList || !results || !emptyState) {
-                console.log('Some DOM elements not found, skipping progress update');
-                return;
-            }
 
             const percentage = progress.total > 0 ? (progress.checked / progress.total) * 100 : 0;
             progressFill.style.width = percentage + '%';
-            progressFill.setAttribute('aria-valuenow', percentage);
-            
-            // Update progress text
-            const progressText = document.getElementById('progressText');
-            if (progressText) {
-                progressText.textContent = Math.round(percentage) + '%';
-            }
             
             if (progress.currentDomain) {
-                status.innerHTML = '<div class="loading-spinner"></div>Checking: <strong>' + progress.currentDomain + '</strong>';
+                status.innerHTML = \`<div class="loading-spinner"></div>Checking: \${progress.currentDomain}\`;
             } else {
-                status.innerHTML = progress.status === 'completed' ? '<i class="ti ti-check text-success me-2"></i>Checking completed!' : 
-                                   progress.status === 'stopped' ? '<i class="ti ti-square text-warning me-2"></i>Checking stopped.' : 
-                                   '<i class="ti ti-loader me-2"></i>Processing...';
+                status.textContent = progress.status === 'completed' ? 'Checking completed!' : 
+                                   progress.status === 'stopped' ? 'Checking stopped.' : 'Processing...';
             }
 
             checkedCount.textContent = progress.checked;
@@ -910,19 +592,17 @@ app.get('/', (req, res) => {
 
             // Update successful domains list with evidence
             successList.innerHTML = '';
-            
             if (progress.successfulDomainsWithEvidence && progress.successfulDomainsWithEvidence.length > 0) {
                 progress.successfulDomainsWithEvidence.forEach(item => {
                     const domainItem = document.createElement('div');
                     domainItem.className = 'domain-item';
-                    domainItem.innerHTML = 
-                        '<div class="d-flex justify-content-between align-items-start w-100">' +
-                            '<div class="flex-grow-1 me-3">' +
-                                '<div class="fw-bold text-primary">' + item.domain + '</div>' +
-                                '<div class="text-muted small">' + item.evidence.join('; ') + '</div>' +
-                            '</div>' +
-                            '<span class="badge bg-success">Umbraco ✓</span>' +
-                        '</div>';
+                    domainItem.innerHTML = \`
+                        <div class="domain-info">
+                            <span class="domain-name">\${item.domain}</span>
+                            <div class="domain-evidence">\${item.evidence.join('; ')}</div>
+                        </div>
+                        <span class="domain-status">Umbraco ✓</span>
+                    \`;
                     successList.appendChild(domainItem);
                 });
             } else if (progress.successfulDomains && progress.successfulDomains.length > 0) {
@@ -930,31 +610,19 @@ app.get('/', (req, res) => {
                 progress.successfulDomains.forEach(domain => {
                     const domainItem = document.createElement('div');
                     domainItem.className = 'domain-item';
-                    domainItem.innerHTML = 
-                        '<div class="d-flex justify-content-between align-items-start w-100">' +
-                            '<div class="flex-grow-1 me-3">' +
-                                '<div class="fw-bold text-primary">' + domain + '</div>' +
-                                '<div class="text-muted small">Evidence not available</div>' +
-                            '</div>' +
-                            '<span class="badge bg-secondary">200 OK</span>' +
-                        '</div>';
+                    domainItem.innerHTML = \`
+                        <div class="domain-info">
+                            <span class="domain-name">\${domain}</span>
+                            <div class="domain-evidence">Evidence not available</div>
+                        </div>
+                        <span class="domain-status">200 OK</span>
+                    \`;
                     successList.appendChild(domainItem);
                 });
             }
 
             if (progress.successfulDomains.length > 0) {
                 results.style.display = 'block';
-                emptyState.style.display = 'none';
-                // Show email extraction button when we have successful domains
-                const emailExtractBtn = document.getElementById('emailExtractBtn');
-                if (emailExtractBtn) {
-                    emailExtractBtn.style.display = 'inline-block';
-                }
-                
-                // Store domains data globally for the table view
-                domainsData = progress.successfulDomainsWithEvidence || [];
-            } else {
-                emptyState.style.display = 'block';
             }
         }
 
@@ -984,49 +652,6 @@ app.get('/', (req, res) => {
                 }
             } catch (error) {
                 showAlert('Download failed: ' + error.message);
-            }
-        }
-
-        async function proceedToEmailExtraction() {
-            if (!checkJobId) {
-                showAlert('No results to proceed with.');
-                return;
-            }
-
-            try {
-                // Download the domains CSV for email extraction
-                const response = await fetch(\`/download-email-extraction/\${checkJobId}\`);
-                
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'umbraco_domains_for_email_extraction.csv';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-
-                    // Get the count of domains
-                    const progressResponse = await fetch(\`/progress/\${checkJobId}\`);
-                    const progress = await progressResponse.json();
-                    const domainCount = progress.successfulDomains ? progress.successfulDomains.length : 0;
-
-                    // Show instructions for email extraction
-                    showAlert(\`✅ Downloaded \${domainCount} domains for email extraction!\\n\\n📧 Next steps:\\n1. Go to http://localhost:3001 (Email Extractor)\\n2. Upload the downloaded CSV file\\n3. Start email extraction process\`, 'success');
-
-                    // Open email extractor in new tab
-                    setTimeout(() => {
-                        window.open('http://localhost:3001', '_blank');
-                    }, 2000);
-                } else {
-                    const result = await response.json();
-                    showAlert(result.error || 'Failed to download domains for email extraction');
-                }
-
-            } catch (error) {
-                showAlert('Failed to proceed with email extraction: ' + error.message);
             }
         }
     </script>
@@ -1107,13 +732,13 @@ app.post('/upload', upload.single('csvfile'), (req, res) => {
 // Start domain checking
 app.post('/check', async (req, res) => {
   const { filename, method = 'http' } = req.body;
-
+  
   if (!filename) {
     return res.status(400).json({ error: 'No filename provided' });
   }
 
   const filePath = path.join(__dirname, 'uploads', filename);
-
+  
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'File not found' });
   }
@@ -1123,7 +748,7 @@ app.post('/check', async (req, res) => {
 
   // Generate unique job ID
   const jobId = Date.now().toString();
-
+  
   // Parse domains from CSV using detected column
   const domains = [];
   let rowCount = 0;
@@ -1149,7 +774,7 @@ app.post('/check', async (req, res) => {
         checked: 0,
         successCount: 0,
         successfulDomains: [],
-        successfulDomainsWithEvidence: [],
+        successfulDomainsWithEvidence: [], // Store domains with their evidence
         currentDomain: null,
         startTime: Date.now()
       });
@@ -1206,10 +831,10 @@ app.get('/download/:jobId', (req, res) => {
     return res.status(400).json({ error: 'No successful domains to download' });
   }
 
-  // Generate CSV with evidence and company names
-  const csvData = [['Domain', 'Company Name', 'Evidence']];
+  // Generate CSV with evidence
+  const csvData = [['Domain', 'Evidence']];
   progress.successfulDomainsWithEvidence.forEach(item => {
-    csvData.push([item.domain, item.companyName || 'Not detected', item.evidence.join('; ')]);
+    csvData.push([item.domain, item.evidence.join('; ')]);
   });
   
   stringify(csvData, (err, output) => {
@@ -1219,36 +844,6 @@ app.get('/download/:jobId', (req, res) => {
     
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename="umbraco_domains_with_evidence.csv"');
-    res.send(output);
-  });
-});
-
-// Download domains for email extraction (simplified CSV)
-app.get('/download-email-extraction/:jobId', (req, res) => {
-  const { jobId } = req.params;
-  const progress = activeChecks.get(jobId);
-  
-  if (!progress) {
-    return res.status(404).json({ error: 'Job not found' });
-  }
-  
-  if (progress.successfulDomains.length === 0) {
-    return res.status(400).json({ error: 'No successful domains to download' });
-  }
-
-  // Generate simplified CSV with just domains for email extraction
-  const csvData = [['Domain']];
-  progress.successfulDomains.forEach(domain => {
-    csvData.push([domain]);
-  });
-  
-  stringify(csvData, (err, output) => {
-    if (err) {
-      return res.status(500).json({ error: 'Failed to generate CSV' });
-    }
-    
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="umbraco_domains_for_email_extraction.csv"');
     res.send(output);
   });
 });
@@ -1280,11 +875,10 @@ async function checkDomainsWithHTTP(jobId, domains) {
           progress.successfulDomains.push(domain);
           progress.successfulDomainsWithEvidence.push({
             domain: domain,
-            evidence: results.evidence,
-            companyName: results.companyName || 'Not detected'
+            evidence: results.evidence
           });
           progress.successCount++;
-          console.log(`✓ ${domain} - Umbraco detected! Evidence: ${results.evidence.join('; ')} Company: ${results.companyName || 'Not detected'}`);
+          console.log(`✓ ${domain} - Umbraco detected! Evidence: ${results.evidence.join('; ')}`);
         } else {
           console.log(`✗ ${domain} - No Umbraco evidence found`);
         }
@@ -1314,7 +908,6 @@ async function checkDomainWithHTTP(domain) {
   return new Promise(async (resolve, reject) => {
     let isUmbraco = false;
     let evidence = [];
-    let companyName = '';
     
     // Try HTTPS first
     try {
@@ -1322,9 +915,8 @@ async function checkDomainWithHTTP(domain) {
       if (httpsResult.success) {
         isUmbraco = httpsResult.isUmbraco;
         evidence = httpsResult.evidence;
-        companyName = httpsResult.companyName || '';
         if (isUmbraco) {
-          return resolve({ isUmbraco, evidence, companyName });
+          return resolve({ isUmbraco, evidence });
         }
       }
     } catch (error) {
@@ -1337,13 +929,12 @@ async function checkDomainWithHTTP(domain) {
       if (httpResult.success) {
         isUmbraco = httpResult.isUmbraco;
         evidence = httpResult.evidence;
-        companyName = httpResult.companyName || '';
       }
     } catch (error) {
       console.log(`🔄 ${domain} - HTTP also failed: ${error.message}`);
     }
 
-    resolve({ isUmbraco, evidence, companyName });
+    resolve({ isUmbraco, evidence });
   });
 }
 
@@ -1428,12 +1019,10 @@ async function makeHTTPRequest(url, isHTTPS, redirectCount = 0) {
       stream.on('end', () => {
         try {
           const isUmbraco = analyzeResponseForUmbraco(data, res.headers, res.statusCode, url);
-          const companyName = extractCompanyName(data, url);
           resolve({
             success: true,
             isUmbraco: isUmbraco.isUmbraco,
-            evidence: isUmbraco.evidence,
-            companyName: companyName
+            evidence: isUmbraco.evidence
           });
         } catch (error) {
           reject(error);
@@ -1463,121 +1052,72 @@ function analyzeResponseForUmbraco(content, headers, statusCode, url) {
   let isUmbraco = false;
   let evidence = [];
   
-  // Check status code - if we get a 200 response to /umbraco/, it's likely Umbraco
-  if (statusCode === 200) {
-    // Method 1: Direct Umbraco path access (strongest indicator)
-    if (url.includes('/umbraco/')) {
-      isUmbraco = true;
-      evidence.push('Direct access to /umbraco/ path returned 200');
-    }
-    
-    // Method 2: Check HTML content for Umbraco indicators
-    if (content.toLowerCase().includes('umbraco')) {
-      isUmbraco = true;
-      evidence.push('HTML content contains Umbraco references');
-    }
-    
-    // Method 3: Check for .aspx extensions (common in Umbraco)
-    if (url.includes('.aspx') || content.includes('.aspx')) {
-      isUmbraco = true;
-      evidence.push('Found .aspx extensions (common in Umbraco)');
-    }
-    
-    // Method 4: Check for ASP.NET indicators (Umbraco is built on ASP.NET)
-    if (content.includes('__VIEWSTATE') || 
-        content.includes('__EVENTVALIDATION') ||
-        content.includes('asp:') ||
-        content.includes('runat="server"')) {
-      isUmbraco = true;
-      evidence.push('Found ASP.NET indicators (Umbraco is ASP.NET-based)');
-    }
-    
-    // Method 5: Check for common Umbraco file extensions and paths
-    if (content.includes('.ashx') || 
-        content.includes('.asmx') ||
-        content.includes('umbraco.webservices') ||
-        content.includes('umbraco.config')) {
-      isUmbraco = true;
-      evidence.push('Found Umbraco-specific file references');
-    }
-  } else if (statusCode === 403 || statusCode === 401) {
-    // These status codes often indicate Umbraco admin access is restricted
-    // which is a good sign that Umbraco is installed
+  // Check status code
+  if (statusCode !== 200) {
+    return { isUmbraco: false, evidence: ['Status code: ' + statusCode] };
+  }
+
+  // Method 1: Check HTML content for Umbraco indicators
+  if (content.toLowerCase().includes('umbraco')) {
     isUmbraco = true;
-    evidence.push('Status code ' + statusCode + ' - Umbraco admin access restricted');
-  } else if (statusCode === 404) {
-    // Check if the 404 page contains Umbraco references
-    if (content.toLowerCase().includes('umbraco')) {
-      isUmbraco = true;
-      evidence.push('404 page contains Umbraco references');
-    }
+    evidence.push('HTML content contains Umbraco references');
+  }
+  
+  // Method 2: Check for .aspx extensions (common in Umbraco)
+  if (url.includes('.aspx') || content.includes('.aspx')) {
+    isUmbraco = true;
+    evidence.push('Found .aspx extensions (common in Umbraco)');
+  }
+  
+  // Method 3: Check for Umbraco-specific text patterns
+  const umbracoPatterns = [
+    'umbraco',
+    'Umbraco',
+    'UMBRACO',
+    'umbraco.aspx',
+    'umbraco/umbraco.aspx',
+    'umbraco-login',
+    'umbraco-dashboard'
+  ];
+  
+  const foundPatterns = umbracoPatterns.filter(pattern => 
+    content.toLowerCase().includes(pattern.toLowerCase())
+  );
+  
+  if (foundPatterns.length > 0) {
+    isUmbraco = true;
+    evidence.push(`Found Umbraco text patterns: ${foundPatterns.join(', ')}`);
+  }
+  
+  // Method 4: Check response headers for Umbraco indicators
+  const umbracoHeaders = Object.keys(headers).filter(key => 
+    key.toLowerCase().includes('umbraco')
+  );
+  if (umbracoHeaders.length > 0) {
+    isUmbraco = true;
+    evidence.push(`Found Umbraco headers: ${umbracoHeaders.join(', ')}`);
+  }
+  
+  // Method 5: Check for Umbraco-specific HTML elements
+  if (content.includes('<umbraco') || 
+      content.includes('class="umbraco') || 
+      content.includes('id="umbraco') ||
+      content.includes('umbraco-login') ||
+      content.includes('umbraco-dashboard')) {
+    isUmbraco = true;
+    evidence.push('Found Umbraco-specific HTML elements');
+  }
+  
+  // Method 6: Check for Umbraco admin interface elements
+  if (content.includes('umbraco.aspx') || 
+      content.includes('umbraco/umbraco.aspx') ||
+      content.includes('umbraco-login') ||
+      content.includes('umbraco-dashboard')) {
+    isUmbraco = true;
+    evidence.push('Found Umbraco admin interface elements');
   }
 
   return { isUmbraco, evidence };
-}
-
-// Extract company name from HTML content
-function extractCompanyName(content, url) {
-  let companyName = '';
-  
-  try {
-    // Method 1: Look for title tag
-    const titleMatch = content.match(/<title[^>]*>([^<]+)<\/title>/i);
-    if (titleMatch && titleMatch[1]) {
-      let title = titleMatch[1].trim();
-      // Clean up title - remove common suffixes
-      title = title.replace(/\s*[-|]\s*(Home|Welcome|Official Site|Website).*$/i, '');
-      if (title.length > 3 && title.length < 100) {
-        companyName = title;
-      }
-    }
-    
-    // Method 2: Look for h1 tags
-    if (!companyName) {
-      const h1Match = content.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-      if (h1Match && h1Match[1]) {
-        let h1Text = h1Match[1].trim();
-        h1Text = h1Text.replace(/\s*[-|]\s*(Home|Welcome|Official Site|Website).*$/i, '');
-        if (h1Text.length > 3 && h1Text.length < 100) {
-          companyName = h1Text;
-        }
-      }
-    }
-    
-    // Method 3: Look for logo alt text
-    if (!companyName) {
-      const logoMatch = content.match(/<img[^>]*alt=["']([^"']+)["'][^>]*>/i);
-      if (logoMatch && logoMatch[1]) {
-        let altText = logoMatch[1].trim();
-        altText = altText.replace(/\s*(logo|brand|company).*$/i, '');
-        if (altText.length > 3 && altText.length < 100) {
-          companyName = altText;
-        }
-      }
-    }
-    
-    // Method 4: Extract from domain if no other name found
-    if (!companyName) {
-      const domain = new URL(url).hostname;
-      companyName = domain.replace(/^www\./, '').split('.')[0];
-      // Capitalize first letter
-      companyName = companyName.charAt(0).toUpperCase() + companyName.slice(1);
-    }
-    
-    // Clean up the company name
-    if (companyName) {
-      companyName = companyName.replace(/[^\w\s\-&]/g, '').trim();
-      // Limit length
-      if (companyName.length > 50) {
-        companyName = companyName.substring(0, 50) + '...';
-      }
-    }
-    
-  } catch (error) {
-    console.log('Error extracting company name:', error.message);
-  }
-  
-  return companyName || 'Not detected';
 }
 
 // Cleanup old files and jobs periodically
