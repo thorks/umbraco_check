@@ -1,7 +1,7 @@
 {
   "name": "domain-csv-checker",
   "version": "1.0.0",
-  "description": "Check domain CSV files for /umbraco/ endpoints using Puppeteer",
+  "description": "Check domain CSV files for /umbraco/ endpoints using HTTP requests",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "puppeteer": "^21.0.0",
     "multer": "^1.4.5-lts.1",
     "csv-parse": "^5.4.0",
     "csv-stringify": "^6.4.0",
