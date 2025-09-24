@@ -1049,27 +1049,21 @@ async function makeHTTPRequest(url, isHTTPS, redirectCount = 0) {
 
 // Analyze response for Umbraco indicators
 function analyzeResponseForUmbraco(content, headers, statusCode, url) {
-  let isUmbraco = false;
   let evidence = [];
+  let matchCount = 0;
   
   // Check status code
   if (statusCode !== 200) {
     return { isUmbraco: false, evidence: ['Status code: ' + statusCode] };
   }
 
-  // Method 1: Check HTML content for Umbraco indicators
-  if (content.toLowerCase().includes('umbraco')) {
-    isUmbraco = true;
-    evidence.push('HTML content contains Umbraco references');
-  }
-  
-  // Method 2: Check for .aspx extensions (common in Umbraco)
+  // Method 1: Check for .aspx extensions (common in Umbraco)
   if (url.includes('.aspx') || content.includes('.aspx')) {
-    isUmbraco = true;
+    matchCount++;
     evidence.push('Found .aspx extensions (common in Umbraco)');
   }
   
-  // Method 3: Check for Umbraco-specific text patterns
+  // Method 2: Check for Umbraco-specific text patterns
   const umbracoPatterns = [
     'umbraco',
     'Umbraco',
@@ -1085,36 +1079,45 @@ function analyzeResponseForUmbraco(content, headers, statusCode, url) {
   );
   
   if (foundPatterns.length > 0) {
-    isUmbraco = true;
+    matchCount++;
     evidence.push(`Found Umbraco text patterns: ${foundPatterns.join(', ')}`);
   }
   
-  // Method 4: Check response headers for Umbraco indicators
+  // Method 3: Check response headers for Umbraco indicators
   const umbracoHeaders = Object.keys(headers).filter(key => 
     key.toLowerCase().includes('umbraco')
   );
   if (umbracoHeaders.length > 0) {
-    isUmbraco = true;
+    matchCount++;
     evidence.push(`Found Umbraco headers: ${umbracoHeaders.join(', ')}`);
   }
   
-  // Method 5: Check for Umbraco-specific HTML elements
+  // Method 4: Check for Umbraco-specific HTML elements
   if (content.includes('<umbraco') || 
       content.includes('class="umbraco') || 
       content.includes('id="umbraco') ||
       content.includes('umbraco-login') ||
       content.includes('umbraco-dashboard')) {
-    isUmbraco = true;
+    matchCount++;
     evidence.push('Found Umbraco-specific HTML elements');
   }
   
-  // Method 6: Check for Umbraco admin interface elements
+  // Method 5: Check for Umbraco admin interface elements
   if (content.includes('umbraco.aspx') || 
       content.includes('umbraco/umbraco.aspx') ||
       content.includes('umbraco-login') ||
       content.includes('umbraco-dashboard')) {
-    isUmbraco = true;
+    matchCount++;
     evidence.push('Found Umbraco admin interface elements');
+  }
+
+  // Require at least 2 matches to confirm Umbraco
+  const isUmbraco = matchCount >= 2;
+  
+  if (isUmbraco) {
+    evidence.unshift(`Umbraco detected (${matchCount}/5 checks passed)`);
+  } else {
+    evidence.unshift(`Not Umbraco (${matchCount}/5 checks passed, need 2+)`);
   }
 
   return { isUmbraco, evidence };
