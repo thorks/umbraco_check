@@ -1,6 +1,5 @@
 const express = require('express');
 const multer = require('multer');
-const puppeteer = require('puppeteer');
 const { parse } = require('csv-parse');
 const { stringify } = require('csv-stringify');
 const fs = require('fs');
@@ -41,8 +40,9 @@ const upload = multer({
 app.use(express.static('public'));
 app.use(express.json());
 
-// Store active checking processes
+// Store active checking processes and domain column index
 const activeChecks = new Map();
+const fileDomainColumnIndex = new Map(); // Map filename → domain column index
 
 // Main route - serve the HTML interface
 app.get('/', (req, res) => {
@@ -52,7 +52,7 @@ app.get('/', (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Domain CSV Checker with Puppeteer</title>
+    <title>Domain CSV Checker</title>
     <style>
         * {
             margin: 0;
@@ -358,7 +358,7 @@ app.get('/', (req, res) => {
 <body>
     <div class="container">
         <h1>🌐 Umbraco CMS Detector</h1>
-        <div class="subtitle">Powered by Puppeteer - Advanced Umbraco detection with evidence analysis</div>
+        <div class="subtitle">Advanced Umbraco detection with evidence analysis</div>
         
         <div class="upload-section" id="uploadSection">
             <div class="upload-text">📁 Drag & drop your CSV file here or click to browse<br><small>Note: Domains will be read from the 3rd column</small></div>
@@ -374,7 +374,6 @@ app.get('/', (req, res) => {
                 <label for="checkMethod">Detection Method:</label>
                 <select id="checkMethod">
                     <option value="http">🚀 Lightweight HTTP (Recommended)</option>
-                    <option value="puppeteer">🌐 Full Browser (Puppeteer)</option>
                 </select>
             </div>
             <button id="checkBtn" class="btn" style="display: none;" onclick="startChecking()">
@@ -667,21 +666,62 @@ app.post('/upload', upload.single('csvfile'), (req, res) => {
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
-  // Parse CSV to count domains (using 3rd column)
-  const domains = [];
+  // Detect which column contains domains
+  let domainCol = null;
+  let domains = [];
+  let firstRow = null;
+  let rowCount = 0;
+
   fs.createReadStream(req.file.path)
     .pipe(parse({ columns: false, skip_empty_lines: true }))
     .on('data', (row) => {
-      if (row[2] && row[2].toLowerCase() !== 'domain') {
-        let domain = row[2].trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
-        if (domain) domains.push(domain);
+      rowCount++;
+      if (rowCount === 1) {
+        // Try to detect domain column in first row
+        for (let i = 0; i < row.length; i++) {
+          const cell = (row[i] || '').toLowerCase();
+          // Heuristic: contains a dot, no spaces, not a header
+          if (
+            cell.includes('.') &&
+            !cell.includes(' ') &&
+            !cell.includes('@') && // skip emails
+            !['domain', 'website', 'url'].includes(cell)
+          ) {
+            domainCol = i;
+            break;
+          }
+        }
+        // If not found, fallback to header names
+        if (domainCol === null) {
+          for (let i = 0; i < row.length; i++) {
+            const cell = (row[i] || '').toLowerCase();
+            if (['domain', 'website', 'url'].includes(cell)) {
+              domainCol = i;
+              break;
+            }
+          }
+        }
+        // If still not found, fallback to column 2 (index 2)
+        if (domainCol === null) domainCol = 2;
+        firstRow = row;
+      } else {
+        // Use detected column
+        const cell = row[domainCol];
+        if (cell && cell.toLowerCase() !== 'domain') {
+          let domain = cell.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+          if (domain) domains.push(domain);
+        }
       }
     })
     .on('end', () => {
+      // Store the detected column index for this file
+      fileDomainColumnIndex.set(req.file.filename, domainCol);
       res.json({
         success: true,
         filename: req.file.filename,
-        domainCount: domains.length
+        domainCount: domains.length,
+        domainColumn: domainCol,
+        sampleDomain: domains[0] || null
       });
     })
     .on('error', (error) => {
@@ -703,16 +743,26 @@ app.post('/check', async (req, res) => {
     return res.status(404).json({ error: 'File not found' });
   }
 
+  // Get the detected domain column index for this file
+  const domainCol = fileDomainColumnIndex.get(filename) ?? 2;
+
   // Generate unique job ID
   const jobId = Date.now().toString();
   
-  // Parse domains from CSV (using 3rd column)
+  // Parse domains from CSV using detected column
   const domains = [];
+  let rowCount = 0;
   fs.createReadStream(filePath)
     .pipe(parse({ columns: false, skip_empty_lines: true }))
     .on('data', (row) => {
-      if (row[2] && row[2].toLowerCase() !== 'domain') {
-        let domain = row[2].trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+      rowCount++;
+      // Skip header row if it matches
+      if (rowCount === 1 && ['domain', 'website', 'url'].includes((row[domainCol] || '').toLowerCase())) {
+        return;
+      }
+      const cell = row[domainCol];
+      if (cell && cell.toLowerCase() !== 'domain') {
+        let domain = cell.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
         if (domain) domains.push(domain);
       }
     })
@@ -729,12 +779,8 @@ app.post('/check', async (req, res) => {
         startTime: Date.now()
       });
 
-      // Start checking domains in background using selected method
-      if (method === 'puppeteer') {
-        checkDomainsWithPuppeteer(jobId, domains);
-      } else {
-        checkDomainsWithHTTP(jobId, domains);
-      }
+      // Start checking domains in background using HTTP method
+      checkDomainsWithHTTP(jobId, domains);
 
       res.json({
         success: true,
@@ -802,342 +848,6 @@ app.get('/download/:jobId', (req, res) => {
   });
 });
 
-async function checkDomainsWithPuppeteer(jobId, domains) {
-  const progress = activeChecks.get(jobId);
-  
-  try {
-    // Process domains one at a time with a new browser instance for each
-    for (let i = 0; i < domains.length; i++) {
-      // Check if job was stopped
-      if (progress.status === 'stopped') {
-        break;
-      }
-
-      const domain = domains[i];
-      const testUrl = `https://${domain}/umbraco/`;
-      
-      progress.currentDomain = domain;
-      progress.checked = i + 1;
-
-      let browser;
-      let retryCount = 0;
-      const maxRetries = 2;
-      let success = false;
-
-      while (retryCount <= maxRetries && !success) {
-        try {
-          console.log(`Checking ${i + 1}/${domains.length}: ${testUrl}${retryCount > 0 ? ` (retry ${retryCount})` : ''}`);
-          
-          // Launch a new browser instance for this domain
-          browser = await puppeteer.launch({
-            headless: 'new',
-            args: [
-              '--no-sandbox',
-              '--disable-setuid-sandbox',
-              '--disable-dev-shm-usage',
-              '--disable-gpu',
-              '--no-first-run',
-              '--disable-default-apps',
-              '--disable-background-timer-throttling',
-              '--disable-backgrounding-occluded-windows',
-              '--disable-renderer-backgrounding',
-              '--disable-web-security',
-              '--disable-features=VizDisplayCompositor',
-              '--disable-extensions',
-              '--disable-plugins',
-              '--disable-images',
-              '--disable-javascript',
-              '--disable-css',
-              '--disable-fonts',
-              '--disable-3d-apis',
-              '--disable-accelerated-2d-canvas',
-              '--disable-accelerated-jpeg-decoding',
-              '--disable-accelerated-mjpeg-decode',
-              '--disable-accelerated-video-decode',
-              '--disable-accelerated-video-encode',
-              '--memory-pressure-off',
-              '--max_old_space_size=4096',
-              '--disable-ipc-flooding-protection',
-              '--disable-background-networking',
-              '--disable-default-apps',
-              '--disable-sync',
-              '--metrics-recording-only',
-              '--no-default-browser-check',
-              '--disable-component-extensions-with-background-pages',
-              '--disable-background-timer-throttling',
-              '--disable-renderer-backgrounding',
-              '--disable-backgrounding-occluded-windows',
-              '--disable-features=TranslateUI,BlinkGenPropertyTrees',
-              '--disable-ipc-flooding-protection'
-            ]
-          });
-
-          const page = await browser.newPage();
-          
-          // Set reasonable timeouts and user agent
-          await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-          page.setDefaultTimeout(45000);
-          page.setDefaultNavigationTimeout(45000);
-          
-          // Set additional page options for better reliability
-          await page.setExtraHTTPHeaders({
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
-          });
-
-          // Test basic connectivity first with a simple request
-          let response;
-          try {
-            // First try a simple HEAD request to test connectivity
-            try {
-              response = await page.goto(testUrl, {
-                waitUntil: 'domcontentloaded',
-                timeout: 30000
-              });
-            } catch (navError) {
-              console.log(`🔄 ${domain} - domcontentloaded failed, trying load event...`);
-              try {
-                response = await page.goto(testUrl, {
-                  waitUntil: 'load',
-                  timeout: 30000
-                });
-              } catch (loadError) {
-                console.log(`🔄 ${domain} - load event failed, trying networkidle0...`);
-                response = await page.goto(testUrl, {
-                  waitUntil: 'networkidle0',
-                  timeout: 30000
-                });
-              }
-            }
-          } catch (connectError) {
-            // If all navigation strategies fail, try a minimal approach
-            console.log(`🔄 ${domain} - All navigation strategies failed, trying minimal approach...`);
-            try {
-              response = await page.goto(testUrl, {
-                waitUntil: 'commit',
-                timeout: 20000
-              });
-            } catch (minimalError) {
-              throw connectError; // Throw the original error if minimal approach also fails
-            }
-          }
-
-          // If HTTPS fails, try HTTP as fallback
-          if (!response || response.status() >= 400) {
-            try {
-              const httpUrl = testUrl.replace('https://', 'http://');
-              console.log(`🔄 ${domain} - HTTPS failed, trying HTTP: ${httpUrl}`);
-              
-              response = await page.goto(httpUrl, {
-                waitUntil: 'domcontentloaded',
-                timeout: 30000
-              });
-            } catch (httpError) {
-              // Keep the original response if HTTP also fails
-              console.log(`⚠️  ${domain} - HTTP fallback also failed: ${httpError.message}`);
-            }
-          }
-
-          // Check if the domain is actually using Umbraco CMS
-          let isUmbraco = false;
-          let umbracoEvidence = [];
-          
-          if (response && response.status() === 200) {
-            try {
-              // Get page content for analysis
-              const pageContent = await page.content();
-              const pageUrl = page.url();
-              
-              // Method 1: Check HTML content for Umbraco indicators
-              if (pageContent.includes('umbraco') || pageContent.includes('Umbraco')) {
-                isUmbraco = true;
-                umbracoEvidence.push('HTML content contains Umbraco references');
-              }
-              
-              // Method 2: Check for Umbraco-specific HTML elements
-              const umbracoElements = await page.$$('umbraco, [class*="umbraco"], [id*="umbraco"]');
-              if (umbracoElements.length > 0) {
-                isUmbraco = true;
-                umbracoEvidence.push(`Found ${umbracoElements.length} Umbraco-specific HTML elements`);
-              }
-              
-              // Method 3: Check for Umbraco JavaScript variables
-              const hasUmbracoJS = await page.evaluate(() => {
-                return typeof window.Umbraco !== 'undefined' || 
-                       typeof window.umbraco !== 'undefined' ||
-                       document.querySelector('script[src*="umbraco"]') !== null;
-              });
-              if (hasUmbracoJS) {
-                isUmbraco = true;
-                umbracoEvidence.push('Found Umbraco JavaScript variables or scripts');
-              }
-              
-              // Method 4: Check for Umbraco admin interface elements
-              const adminElements = await page.$$('input[name*="umbraco"], form[action*="umbraco"], .umbraco-login, .umbraco-dashboard');
-              if (adminElements.length > 0) {
-                isUmbraco = true;
-                umbracoEvidence.push('Found Umbraco admin interface elements');
-              }
-              
-              // Method 5: Check for .aspx extensions (common in Umbraco)
-              if (pageUrl.includes('.aspx') || pageContent.includes('.aspx')) {
-                isUmbraco = true;
-                umbracoEvidence.push('Found .aspx extensions (common in Umbraco)');
-              }
-              
-              // Method 6: Check for Umbraco-specific meta tags
-              const umbracoMeta = await page.$$('meta[name*="umbraco"], meta[content*="umbraco"]');
-              if (umbracoMeta.length > 0) {
-                isUmbraco = true;
-                umbracoEvidence.push('Found Umbraco-specific meta tags');
-              }
-              
-              // Method 7: Check response headers for Umbraco indicators
-              const headers = response.headers();
-              const umbracoHeaders = Object.keys(headers).filter(key => 
-                key.toLowerCase().includes('umbraco')
-              );
-              if (umbracoHeaders.length > 0) {
-                isUmbraco = true;
-                umbracoEvidence.push(`Found Umbraco headers: ${umbracoHeaders.join(', ')}`);
-              }
-              
-              // Method 8: Check if we're redirected to a proper Umbraco admin page
-              if (pageUrl.includes('/umbraco/umbraco.aspx') || 
-                  pageUrl.includes('/umbraco/') && pageContent.includes('umbraco')) {
-                isUmbraco = true;
-                umbracoEvidence.push('Redirected to Umbraco admin page');
-              }
-              
-              // Method 9: Look for Umbraco-specific text patterns
-              const umbracoTextPatterns = [
-                'umbraco',
-                'Umbraco',
-                'UMBRACO',
-                'umbraco.aspx',
-                'umbraco/umbraco.aspx'
-              ];
-              
-              const foundPatterns = umbracoTextPatterns.filter(pattern => 
-                pageContent.toLowerCase().includes(pattern.toLowerCase())
-              );
-              
-              if (foundPatterns.length > 0) {
-                isUmbraco = true;
-                umbracoEvidence.push(`Found Umbraco text patterns: ${foundPatterns.join(', ')}`);
-              }
-              
-            } catch (contentError) {
-              console.log(`⚠️  ${domain} - Error analyzing content: ${contentError.message}`);
-              // If we can't analyze content, fall back to basic 200 check
-              isUmbraco = true;
-              umbracoEvidence.push('Fallback: 200 response (content analysis failed)');
-            }
-            
-                         if (isUmbraco) {
-               progress.successfulDomains.push(domain);
-               progress.successfulDomainsWithEvidence.push({
-                 domain: domain,
-                 evidence: umbracoEvidence
-               });
-               progress.successCount++;
-               console.log(`✓ ${domain} - Umbraco detected! Evidence: ${umbracoEvidence.join('; ')}`);
-               success = true;
-             } else {
-              console.log(`✗ ${domain} - 200 OK but no Umbraco evidence found`);
-              success = true; // Mark as processed to avoid infinite retry
-            }
-          } else {
-            console.log(`✗ ${domain} - ${response ? response.status() : 'No response'}`);
-            success = true; // Mark as processed to avoid infinite retry
-          }
-
-        } catch (error) {
-          retryCount++;
-          const errorMessage = error.message;
-          
-          // Enhanced error logging for debugging
-          console.log(`🔍 ${domain} - Error details: ${errorMessage}`);
-          if (error.code) {
-            console.log(`🔍 ${domain} - Error code: ${error.code}`);
-          }
-          if (error.syscall) {
-            console.log(`🔍 ${domain} - System call: ${error.syscall}`);
-          }
-          
-          // Categorize and handle specific error types
-          const isRetryableError = 
-            errorMessage.includes('socket hang up') || 
-            errorMessage.includes('net::ERR_CONNECTION_TIMED_OUT') ||
-            errorMessage.includes('net::ERR_CONNECTION_REFUSED') ||
-            errorMessage.includes('net::ERR_NAME_NOT_RESOLVED') ||
-            errorMessage.includes('net::ERR_EMPTY_RESPONSE') ||
-            errorMessage.includes('net::ERR_INTERNET_DISCONNECTED') ||
-            errorMessage.includes('net::ERR_NETWORK_CHANGED') ||
-            errorMessage.includes('net::ERR_TIMED_OUT') ||
-            errorMessage.includes('ECONNRESET') ||
-            errorMessage.includes('read ECONNRESET') ||
-            errorMessage.includes('write ECONNRESET') ||
-            errorMessage.includes('net::ERR_CONNECTION_RESET') ||
-            errorMessage.includes('net::ERR_EMPTY_RESPONSE') ||
-            errorMessage.includes('net::ERR_FAILED') ||
-            errorMessage.includes('net::ERR_ABORTED') ||
-            errorMessage.includes('net::ERR_INVALID_RESPONSE');
-          
-          if (isRetryableError && retryCount <= maxRetries) {
-            console.log(`⚠️  ${domain} - Network issue (${errorMessage}), retrying... (${retryCount}/${maxRetries})`);
-            // More aggressive retry strategy for connection issues
-            let delay;
-            if (errorMessage.includes('ECONNRESET') || errorMessage.includes('socket hang up')) {
-              // For connection reset errors, wait longer and be more persistent
-              delay = Math.min(3000 * Math.pow(2, retryCount - 1), 15000);
-              console.log(`🔄 ${domain} - Connection reset detected, waiting ${delay}ms before retry...`);
-            } else {
-              // Standard exponential backoff for other network issues
-              delay = Math.min(2000 * Math.pow(2, retryCount - 1), 10000);
-            }
-            await new Promise(resolve => setTimeout(resolve, delay));
-            continue;
-          } else if (isRetryableError) {
-            console.log(`✗ ${domain} - Failed after ${maxRetries} retries: ${errorMessage}`);
-          } else {
-            console.log(`✗ ${domain} - Non-retryable error: ${errorMessage}`);
-            success = true; // Mark as processed for non-retryable errors
-          }
-        } finally {
-          // Always close the browser instance after checking each domain
-          if (browser) {
-            try {
-              await browser.close();
-            } catch (closeError) {
-              console.log(`Warning: Failed to close browser for ${domain}: ${closeError.message}`);
-            }
-          }
-        }
-      }
-
-      // Adaptive delay based on previous errors
-      let delay = 1500;
-      if (retryCount > 0) {
-        // If we had retries, wait longer to let the network stabilize
-        delay = Math.min(2000 + (retryCount * 1000), 5000);
-        console.log(`⏳ ${domain} - Waiting ${delay}ms before next domain (had ${retryCount} retries)`);
-      }
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-
-    progress.status = progress.status === 'stopped' ? 'stopped' : 'completed';
-    progress.currentDomain = null;
-    
-  } catch (error) {
-    console.error('Processing error:', error);
-    progress.status = 'error';
-    progress.error = error.message;
-  }
-  
-  console.log(`Job ${jobId} finished. ${progress.successCount}/${domains.length} domains successful.`);
-}
 
 // Lightweight HTTP-based domain checking function
 async function checkDomainsWithHTTP(jobId, domains) {
