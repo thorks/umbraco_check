@@ -43,6 +43,7 @@ app.use(express.json());
 // Store active checking processes and domain column index
 const activeChecks = new Map();
 const fileDomainColumnIndex = new Map(); // Map filename → domain column index
+const emailChecks = new Map(); // Store email checking processes
 
 // Main route - serve the HTML interface
 app.get('/', (req, res) => {
@@ -158,6 +159,14 @@ app.get('/', (req, res) => {
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10,10m-7,0a7,7 0 1,0 14,0a7,7 0 1,0 -14,0" /><path d="M21,21l-6,-6" /></svg>
                                     </span>
                                     <span class="nav-link-title">Detection</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('email')">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><rect x="3" y="5" width="18" height="14" rx="2" /><polyline points="3,7 12,13 21,7" /></svg>
+                                    </span>
+                                    <span class="nav-link-title">Email Detect</span>
                                 </a>
                             </li>
                         </ul>
@@ -492,6 +501,102 @@ app.get('/', (req, res) => {
                 </div>
             </div>
         </div>
+
+        <!-- Email Detect Page -->
+        <div id="email-page" class="page-section">
+            <div class="page-header">
+                <div class="container-xl">
+                    <div class="row g-2 align-items-center">
+                        <div class="col">
+                            <h2 class="page-title">Email Detection</h2>
+                            <div class="text-muted mt-1">Extract email addresses from detected Umbraco sites</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page-body">
+                <div class="container-xl">
+                    <div class="row">
+                        <div class="col-12">
+                            <!-- Three boxes at the top -->
+                            <div class="row mb-4">
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <div class="h2 text-primary" id="totalUmbracoSites">0</div>
+                                            <div class="text-muted">Umbraco Sites Found</div>
+                                            <div id="cmsDetectionStatus" class="mt-2" style="display: none;">
+                                                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                                <small class="text-muted">CMS Detection ongoing</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <button id="emailDetectBtn" class="btn btn-primary" onclick="startEmailDetection()" disabled>
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                    <rect x="3" y="5" width="18" height="14" rx="2" />
+                                                    <polyline points="3,7 12,13 21,7" />
+                                                </svg>
+                                                Email Detect
+                                            </button>
+                                            <div class="text-muted mt-2">Start email extraction</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <div class="h2 text-success" id="emailProgress">0/0</div>
+                                            <div class="text-muted">Domains Processed</div>
+                                            <div id="emailDetectionStatus" class="mt-2" style="display: none;">
+                                                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                                <small class="text-muted">Email detection ongoing</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Email Results Table -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Email Detection Results</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-vcenter card-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th onclick="sortEmailTable('domain')" style="cursor: pointer;" class="sortable">
+                                                        Domain
+                                                    </th>
+                                                    <th onclick="sortEmailTable('company')" style="cursor: pointer;" class="sortable">
+                                                        Company Name
+                                                    </th>
+                                                    <th onclick="sortEmailTable('emails')" style="cursor: pointer;" class="sortable">
+                                                        Email Addresses Found
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="emailTableBody">
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted">No email results yet. Start email detection to see found addresses.</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/js/tabler.min.js"></script>
@@ -499,6 +604,8 @@ app.get('/', (req, res) => {
         let uploadedFileName = '';
         let checkJobId = '';
         let resultsData = []; // Store results for data table
+        let emailResultsData = []; // Store email detection results
+        let emailJobId = '';
 
         // Navigation functions
         function showPage(pageName) {
@@ -522,6 +629,14 @@ app.get('/', (req, res) => {
                     link.classList.add('active');
                 }
             });
+            
+            // Update email page when navigating to it
+            if (pageName === 'email') {
+                updateEmailPage();
+                // Always update the table to ensure it shows current data
+                console.log('Navigating to email page, refreshing table');
+                updateEmailTable();
+            }
         }
 
         // File upload handling
@@ -848,7 +963,7 @@ app.get('/', (req, res) => {
                     
                     return {
                         domain: item.domain,
-                        companyName: null, // Could be enhanced to extract from CSV
+                        companyName: item.companyName || 'Unknown Company',
                         score: score,
                         confidence: confidence,
                         reason: reason
@@ -861,10 +976,238 @@ app.get('/', (req, res) => {
             if (progress.status === 'completed' && progress.successCount > 0) {
                 showPage('results');
             }
+            
+            // Update email page
+            updateEmailPage();
+        }
+
+        // Email detection functions
+        function updateEmailPage() {
+            // Update total Umbraco sites count
+            document.getElementById('totalUmbracoSites').textContent = resultsData.length;
+            console.log('Email page updated - total sites:', resultsData.length);
+            
+            // Show/hide CMS detection status
+            const cmsStatus = document.getElementById('cmsDetectionStatus');
+            const emailBtn = document.getElementById('emailDetectBtn');
+            
+            if (checkJobId) {
+                // Check if job is still running
+                fetch(\`/progress/\${checkJobId}\`)
+                    .then(response => response.json())
+                    .then(progress => {
+                        if (progress.status === 'running') {
+                            cmsStatus.style.display = 'block';
+                            emailBtn.disabled = true;
+                        } else {
+                            cmsStatus.style.display = 'none';
+                            emailBtn.disabled = resultsData.length === 0;
+                        }
+                    })
+                    .catch(() => {
+                        cmsStatus.style.display = 'none';
+                        emailBtn.disabled = resultsData.length === 0;
+                    });
+            } else {
+                cmsStatus.style.display = 'none';
+                emailBtn.disabled = resultsData.length === 0;
+            }
+        }
+
+        function startEmailDetection() {
+            if (resultsData.length === 0) {
+                showAlert('No Umbraco sites found to scan for emails', 'warning');
+                return;
+            }
+
+            console.log('Starting email detection for domains:', resultsData.map(r => r.domain));
+
+            // Create company data lookup object
+            const companyData = {};
+            resultsData.forEach(result => {
+                companyData[result.domain] = result.companyName;
+            });
+
+            console.log('Company data:', companyData);
+
+            // Start email detection
+            fetch('/email-detect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    domains: resultsData.map(r => r.domain),
+                    companyData: companyData
+                })
+            })
+            .then(response => {
+                console.log('Email detection response status:', response.status);
+                return response.json().then(result => ({ response, result }));
+            })
+            .then(({ response, result }) => {
+                if (response.ok) {
+                    emailJobId = result.jobId;
+                    document.getElementById('emailDetectionStatus').style.display = 'block';
+                    document.getElementById('emailDetectBtn').disabled = true;
+                    console.log('Email detection started with job ID:', emailJobId);
+                    pollEmailProgress();
+                } else {
+                    console.error('Email detection failed:', result.error);
+                    showAlert(result.error || 'Failed to start email detection');
+                }
+            })
+            .catch(error => {
+                showAlert('Failed to start email detection: ' + error.message);
+            });
+        }
+
+        function pollEmailProgress() {
+            if (!emailJobId) {
+                console.log('No email job ID, stopping polling');
+                return;
+            }
+
+            console.log(\`Polling email progress for job: \${emailJobId}\`);
+            
+            fetch(\`/email-progress/\${emailJobId}\`)
+                .then(response => {
+                    console.log('Email progress response status:', response.status);
+                    return response.json();
+                })
+                .then(progress => {
+                    console.log('Email progress data received:', progress);
+                    updateEmailProgress(progress);
+                    
+                    if (progress.status === 'completed' || progress.status === 'stopped') {
+                        console.log('Email detection completed, stopping polling');
+                        document.getElementById('emailDetectionStatus').style.display = 'none';
+                        document.getElementById('emailDetectBtn').disabled = false;
+                    } else {
+                        console.log('Email detection still running, continuing to poll...');
+                        setTimeout(pollEmailProgress, 1000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Email progress update failed:', error);
+                    setTimeout(pollEmailProgress, 2000);
+                });
+        }
+
+        function updateEmailProgress(progress) {
+            // Update progress counter
+            document.getElementById('emailProgress').textContent = \`\${progress.processed}/\${progress.total}\`;
+            
+            // Always update email results data and table if results exist
+            if (progress.results) {
+                emailResultsData = progress.results;
+                console.log('Updating email table with progress results:', progress.results);
+                updateEmailTable();
+            }
+            
+            console.log('Email progress updated:', progress.processed, '/', progress.total, 'results:', progress.results?.length || 0);
+            console.log('Progress object:', progress);
+        }
+
+        // Email table functions
+        let currentEmailSort = { column: null, direction: 'asc' };
+        let sortedEmailResultsData = [];
+
+        function updateEmailTable() {
+            const tbody = document.getElementById('emailTableBody');
+            
+            console.log('=== UPDATING EMAIL TABLE ===');
+            console.log('Email results data:', emailResultsData);
+            console.log('Table body element:', tbody);
+            
+            if (!tbody) {
+                console.error('Table body element not found!');
+                return;
+            }
+            
+            if (!emailResultsData || emailResultsData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No email results yet. Start email detection to see found addresses.</td></tr>';
+                console.log('No email results data, showing placeholder');
+                return;
+            }
+            
+            const dataToDisplay = sortedEmailResultsData.length > 0 ? sortedEmailResultsData : emailResultsData;
+            
+            console.log('Displaying data:', dataToDisplay);
+            console.log('Number of results to display:', dataToDisplay.length);
+            
+            tbody.innerHTML = '';
+            dataToDisplay.forEach((result, index) => {
+                console.log(\`Processing result \${index + 1}:\`, result);
+                
+                const row = document.createElement('tr');
+                const emailCount = result.emails ? result.emails.length : 0;
+                
+                row.innerHTML = \`
+                    <td>\${index + 1}</td>
+                    <td><strong>\${result.domain}</strong></td>
+                    <td>\${result.companyName || 'Unknown Company'}</td>
+                    <td>
+                        \${emailCount > 0 
+                            ? result.emails.map(email => \`<span class="badge bg-success me-1" style="color: white;">\${email}</span>\`).join('')
+                            : '<span class="text-muted">No emails found</span>'
+                        }
+                    </td>
+                \`;
+                tbody.appendChild(row);
+                
+                console.log(\`Added row for \${result.domain} with \${emailCount} emails\`);
+            });
+            
+            console.log('Email table updated with', dataToDisplay.length, 'rows');
+            console.log('Final table HTML:', tbody.innerHTML);
+            console.log('=== EMAIL TABLE UPDATE COMPLETE ===');
+        }
+
+        function sortEmailTable(column) {
+            if (currentEmailSort.column === column) {
+                currentEmailSort.direction = currentEmailSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentEmailSort.column = column;
+                currentEmailSort.direction = 'asc';
+            }
+
+            sortedEmailResultsData = [...emailResultsData];
+
+            sortedEmailResultsData.sort((a, b) => {
+                let aVal, bVal;
+                
+                switch (column) {
+                    case 'domain':
+                        aVal = a.domain.toLowerCase();
+                        bVal = b.domain.toLowerCase();
+                        break;
+                    case 'company':
+                        aVal = (a.companyName || 'Unknown Company').toLowerCase();
+                        bVal = (b.companyName || 'Unknown Company').toLowerCase();
+                        break;
+                    case 'emails':
+                        aVal = a.emails ? a.emails.length : 0;
+                        bVal = b.emails ? b.emails.length : 0;
+                        break;
+                    default:
+                        return 0;
+                }
+
+                if (aVal < bVal) return currentEmailSort.direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return currentEmailSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            updateEmailTable();
         }
 
         // Initialize results table on page load
         updateResultsTable();
+        updateEmailPage();
+        
+        // Force update email table on page load if data exists
+        if (emailResultsData && emailResultsData.length > 0) {
+            updateEmailTable();
+        }
     </script>
 </body>
 </html>
@@ -1059,6 +1402,258 @@ app.get('/download/:jobId', (req, res) => {
   });
 });
 
+// Start email detection
+app.post('/email-detect', async (req, res) => {
+  const { domains, companyData } = req.body;
+  
+  if (!domains || !Array.isArray(domains) || domains.length === 0) {
+    return res.status(400).json({ error: 'No domains provided' });
+  }
+
+  // Generate unique job ID
+  const jobId = Date.now().toString();
+  
+  // Initialize email detection progress
+  emailChecks.set(jobId, {
+    status: 'running',
+    total: domains.length,
+    processed: 0,
+    results: [],
+    companyData: companyData || {}, // Store company data for lookup
+    startTime: Date.now()
+  });
+
+  // Start email detection in background
+  detectEmailsFromDomains(jobId, domains);
+
+  res.json({
+    success: true,
+    jobId: jobId,
+    totalDomains: domains.length
+  });
+});
+
+// Get email detection progress
+app.get('/email-progress/:jobId', (req, res) => {
+  const { jobId } = req.params;
+  const progress = emailChecks.get(jobId);
+  
+  if (!progress) {
+    return res.status(404).json({ error: 'Email detection job not found' });
+  }
+  
+  res.json(progress);
+});
+
+// Email detection function
+async function detectEmailsFromDomains(jobId, domains) {
+  const progress = emailChecks.get(jobId);
+  
+  console.log(`Starting email detection for job ${jobId} with ${domains.length} domains`);
+  console.log('Company data:', progress.companyData);
+  
+  try {
+    for (let i = 0; i < domains.length; i++) {
+      const domain = domains[i];
+      progress.processed = i + 1;
+
+      console.log(`📧 ${i + 1}/${domains.length}: Scanning ${domain} for emails...`);
+
+      try {
+        const emails = await scrapeEmailsFromDomain(domain);
+        const companyName = progress.companyData[domain] || 'Unknown Company';
+        
+        const result = {
+          domain: domain,
+          companyName: companyName,
+          emails: emails
+        };
+        
+        progress.results.push(result);
+
+        console.log(`✓ ${domain} - Found ${emails.length} emails:`, emails);
+        console.log(`✓ ${domain} - Company name: ${companyName}`);
+        console.log('Current progress results:', progress.results.length);
+        console.log('Progress results array:', progress.results);
+      } catch (error) {
+        console.log(`✗ ${domain} - Error: ${error.message}`);
+        const errorResult = {
+          domain: domain,
+          companyName: progress.companyData[domain] || 'Unknown Company',
+          emails: []
+        };
+        progress.results.push(errorResult);
+        console.log('Added error result:', errorResult);
+        console.log('Progress results after error:', progress.results);
+      }
+
+      // Small delay between requests
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    progress.status = 'completed';
+    
+  } catch (error) {
+    console.error('Email detection error:', error);
+    progress.status = 'error';
+    progress.error = error.message;
+  }
+  
+  console.log(`Email detection job ${jobId} finished. ${progress.results.length}/${domains.length} domains processed.`);
+  console.log('Final results:', progress.results);
+}
+
+// Scrape emails from a domain
+async function scrapeEmailsFromDomain(domain) {
+  return new Promise(async (resolve, reject) => {
+    let emails = new Set();
+    
+    try {
+      // Try HTTPS first
+      const httpsResult = await makeHTTPRequestForEmails(`https://${domain}`, true);
+      if (httpsResult.success) {
+        emails = new Set([...emails, ...httpsResult.emails]);
+      }
+    } catch (error) {
+      console.log(`🔄 ${domain} - HTTPS failed: ${error.message}`);
+    }
+
+    // Try HTTP as fallback
+    try {
+      const httpResult = await makeHTTPRequestForEmails(`http://${domain}`, false);
+      if (httpResult.success) {
+        emails = new Set([...emails, ...httpResult.emails]);
+      }
+    } catch (error) {
+      console.log(`🔄 ${domain} - HTTP also failed: ${error.message}`);
+    }
+
+    // Also try common email pages
+    const emailPages = ['/contact', '/contact-us', '/about', '/team'];
+    for (const page of emailPages) {
+      try {
+        const pageResult = await makeHTTPRequestForEmails(`https://${domain}${page}`, true);
+        if (pageResult.success) {
+          emails = new Set([...emails, ...pageResult.emails]);
+        }
+      } catch (error) {
+        // Ignore page-specific errors
+      }
+    }
+
+    resolve(Array.from(emails));
+  });
+}
+
+// Make HTTP request for email scraping
+async function makeHTTPRequestForEmails(url, isHTTPS) {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const options = {
+      hostname: urlObj.hostname,
+      port: urlObj.port || (isHTTPS ? 443 : 80),
+      path: urlObj.pathname,
+      method: 'GET',
+      timeout: 15000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'close'
+      }
+    };
+
+    const client = isHTTPS ? https : http;
+    const req = client.request(options, (res) => {
+      if (res.statusCode !== 200) {
+        resolve({ success: true, emails: [], companyName: 'Unknown Company' });
+        return;
+      }
+      
+      let data = '';
+      
+      // Handle gzip compression
+      let stream = res;
+      if (res.headers['content-encoding'] === 'gzip') {
+        const zlib = require('zlib');
+        stream = res.pipe(zlib.createGunzip());
+      } else if (res.headers['content-encoding'] === 'deflate') {
+        const zlib = require('zlib');
+        stream = res.pipe(zlib.createInflate());
+      }
+      
+      stream.on('data', (chunk) => {
+        data += chunk;
+      });
+      
+      stream.on('end', () => {
+        try {
+          const emails = extractEmailsFromContent(data);
+          const companyName = extractCompanyName(urlObj.hostname, data);
+          resolve({
+            success: true,
+            emails: emails,
+            companyName: companyName
+          });
+        } catch (error) {
+          reject(error);
+        }
+      });
+      
+      stream.on('error', (error) => {
+        reject(error);
+      });
+    });
+
+    req.on('error', (error) => {
+      reject(error);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+
+    req.end();
+  });
+}
+
+// Extract emails from HTML content
+function extractEmailsFromContent(content) {
+  const emails = new Set();
+  
+  // Email regex pattern
+  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  
+  // Find all email matches
+  const matches = content.match(emailRegex);
+  
+  if (matches) {
+    matches.forEach(email => {
+      // Filter out common false positives
+      if (!email.includes('example.com') && 
+          !email.includes('test.com') && 
+          !email.includes('domain.com') &&
+          !email.includes('yoursite.com') &&
+          !email.includes('yourdomain.com') &&
+          !email.includes('placeholder') &&
+          !email.includes('sample') &&
+          !email.includes('demo') &&
+          !email.includes('noreply') &&
+          !email.includes('no-reply') &&
+          email.length > 5 &&
+          email.includes('@') &&
+          email.split('@')[1].includes('.')) {
+        emails.add(email.toLowerCase());
+      }
+    });
+  }
+  
+  console.log(`Found ${emails.size} emails in content`);
+  return Array.from(emails);
+}
+
 
 // Lightweight HTTP-based domain checking function
 async function checkDomainsWithHTTP(jobId, domains) {
@@ -1086,7 +1681,8 @@ async function checkDomainsWithHTTP(jobId, domains) {
           progress.successfulDomains.push(domain);
           progress.successfulDomainsWithEvidence.push({
             domain: domain,
-            evidence: results.evidence
+            evidence: results.evidence,
+            companyName: results.companyName
           });
           progress.successCount++;
           console.log(`✓ ${domain} - Umbraco detected! Evidence: ${results.evidence.join('; ')}`);
@@ -1119,6 +1715,7 @@ async function checkDomainWithHTTP(domain) {
   return new Promise(async (resolve, reject) => {
     let isUmbraco = false;
     let evidence = [];
+    let companyName = 'Unknown Company';
     
     // Try HTTPS first
     try {
@@ -1126,8 +1723,33 @@ async function checkDomainWithHTTP(domain) {
       if (httpsResult.success) {
         isUmbraco = httpsResult.isUmbraco;
         evidence = httpsResult.evidence;
+        companyName = httpsResult.companyName;
         if (isUmbraco) {
-          return resolve({ isUmbraco, evidence });
+          // Only get company name from homepage if Umbraco is detected
+          try {
+            const homepageResult = await makeHTTPRequest(`https://${domain}/`, true);
+            if (homepageResult.success && homepageResult.companyName && homepageResult.companyName !== 'Unknown Company') {
+              companyName = homepageResult.companyName;
+              console.log(`✓ ${domain} - Company name from homepage: ${companyName}`);
+            }
+          } catch (error) {
+            console.log(`🔄 ${domain} - Homepage HTTPS failed: ${error.message}`);
+          }
+          
+          // If homepage HTTPS failed, try HTTP
+          if (companyName === 'Unknown Company') {
+            try {
+              const homepageResult = await makeHTTPRequest(`http://${domain}/`, false);
+              if (homepageResult.success && homepageResult.companyName && homepageResult.companyName !== 'Unknown Company') {
+                companyName = homepageResult.companyName;
+                console.log(`✓ ${domain} - Company name from homepage (HTTP): ${companyName}`);
+              }
+            } catch (error) {
+              console.log(`🔄 ${domain} - Homepage HTTP failed: ${error.message}`);
+            }
+          }
+          
+          return resolve({ isUmbraco, evidence, companyName });
         }
       }
     } catch (error) {
@@ -1140,12 +1762,13 @@ async function checkDomainWithHTTP(domain) {
       if (httpResult.success) {
         isUmbraco = httpResult.isUmbraco;
         evidence = httpResult.evidence;
+        companyName = httpResult.companyName;
       }
     } catch (error) {
       console.log(`🔄 ${domain} - HTTP also failed: ${error.message}`);
     }
 
-    resolve({ isUmbraco, evidence });
+    resolve({ isUmbraco, evidence, companyName });
   });
 }
 
@@ -1206,7 +1829,8 @@ async function makeHTTPRequest(url, isHTTPS, redirectCount = 0) {
         resolve({
           success: true,
           isUmbraco: false,
-          evidence: [`Status code: ${res.statusCode}`]
+          evidence: [`Status code: ${res.statusCode}`],
+          companyName: 'Unknown Company'
         });
         return;
       }
@@ -1229,12 +1853,13 @@ async function makeHTTPRequest(url, isHTTPS, redirectCount = 0) {
       
       stream.on('end', () => {
         try {
-          const isUmbraco = analyzeResponseForUmbraco(data, res.headers, res.statusCode, url);
-          resolve({
-            success: true,
-            isUmbraco: isUmbraco.isUmbraco,
-            evidence: isUmbraco.evidence
-          });
+        const isUmbraco = analyzeResponseForUmbraco(data, res.headers, res.statusCode, url);
+        resolve({
+          success: true,
+          isUmbraco: isUmbraco.isUmbraco,
+          evidence: isUmbraco.evidence,
+          companyName: isUmbraco.companyName
+        });
         } catch (error) {
           reject(error);
         }
@@ -1258,15 +1883,92 @@ async function makeHTTPRequest(url, isHTTPS, redirectCount = 0) {
   });
 }
 
+// Extract company name from domain or content
+function extractCompanyName(domain, content) {
+  let companyName = 'Unknown Company';
+  
+  // First priority: Try to find company name in HTML title tag
+  const titleMatch = content.match(/<title[^>]*>([^<]+)<\/title>/i);
+  if (titleMatch) {
+    const title = titleMatch[1].trim();
+    console.log(`Found title for ${domain}: "${title}"`);
+    
+    // Extract company name from title with improved logic
+    let titleCompany = title;
+    
+    // Remove common page suffixes and separators
+    titleCompany = titleCompany
+      .split(/[|&ndash;&mdash;-]/)[0]  // Split on common separators
+      .split(/\s*-\s*Home\s*$/i)[0]    // Remove "- Home" suffix
+      .split(/\s*-\s*Welcome\s*$/i)[0] // Remove "- Welcome" suffix
+      .split(/\s*:\s*Home\s*$/i)[0]    // Remove ": Home" suffix
+      .trim();
+    
+    console.log(`After separator removal: "${titleCompany}"`);
+    
+    // Clean up the title company name
+    if (titleCompany.length > 0 && titleCompany.length < 100) {
+      // Remove common words that aren't company names (but be more selective)
+      const cleanTitle = titleCompany
+        .replace(/\b(home|welcome|about|contact|services|products|blog|news|support|help|login|signin|register)\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      console.log(`After word removal: "${cleanTitle}"`);
+      
+      // If we still have a meaningful name after cleaning
+      if (cleanTitle.length > 2 && cleanTitle.length < 80) {
+        companyName = cleanTitle;
+        console.log(`Using cleaned title company name: "${companyName}"`);
+      } else if (titleCompany.length > 2 && titleCompany.length < 80) {
+        // Use original if cleaned version is too short
+        companyName = titleCompany;
+        console.log(`Using original title company name: "${companyName}"`);
+      } else {
+        console.log(`Title too long or too short: length=${titleCompany.length}, content="${titleCompany}"`);
+      }
+    } else {
+      console.log(`Title company length invalid: ${titleCompany.length}, content="${titleCompany}"`);
+    }
+  } else {
+    console.log(`No title tag found for ${domain}`);
+  }
+  
+  // Second priority: Use domain name if title didn't work or was too generic
+  if (companyName === 'Unknown Company' || companyName.length <= 2) {
+    const domainName = domain.replace(/^www\./, '').split('.')[0];
+    
+    // Clean up domain name
+    companyName = domainName
+      .replace(/[^a-zA-Z0-9]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+    
+    console.log(`Using domain company name: ${companyName}`);
+  }
+  
+  // Final fallback
+  if (companyName.length <= 1) {
+    companyName = 'Unknown Company';
+  }
+  
+  console.log(`Final company name for ${domain}: ${companyName}`);
+  return companyName;
+}
+
 // Analyze response for Umbraco indicators using weighted scoring system
 function analyzeResponseForUmbraco(content, headers, statusCode, url) {
   let evidence = [];
   let score = 0;
   let confidence = 'low';
+  let companyName = 'Unknown Company';
   
   // Check status code
   if (statusCode !== 200) {
-    return { isUmbraco: false, evidence: ['Status code: ' + statusCode] };
+    return { isUmbraco: false, evidence: ['Status code: ' + statusCode], companyName: 'Unknown Company' };
   }
 
   // EXCLUSION CHECK: Meta generator tag analysis
@@ -1304,7 +2006,8 @@ function analyzeResponseForUmbraco(content, headers, statusCode, url) {
     if (isNonUmbraco) {
       return { 
         isUmbraco: false, 
-        evidence: [`EXCLUDED: Meta generator indicates non-Umbraco CMS: ${metaGeneratorMatch[1]}`] 
+        evidence: [`EXCLUDED: Meta generator indicates non-Umbraco CMS: ${metaGeneratorMatch[1]}`],
+        companyName: companyName
       };
     }
   }
@@ -1471,7 +2174,7 @@ function analyzeResponseForUmbraco(content, headers, statusCode, url) {
     evidence.unshift(`Not Umbraco (Score: ${score}, need 3+ points)`);
   }
 
-  return { isUmbraco, evidence };
+  return { isUmbraco, evidence, companyName };
 }
 
 // Cleanup old files and jobs periodically
