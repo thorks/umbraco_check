@@ -52,373 +52,477 @@ app.get('/', (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Domain CSV Checker</title>
+    <title>BlueDetect - Umbraco CMS Detector</title>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons@2.40.0/icons-sprite.svg" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .page-wrapper {
             min-height: 100vh;
-            padding: 20px;
+            background: #f8f9fa;
         }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 {
+        .upload-zone {
+            border: 2px dashed #206bc4;
+            border-radius: 8px;
+            padding: 2rem;
             text-align: center;
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 2.5rem;
-            font-weight: 700;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 1.1rem;
-        }
-
-        .upload-section {
-            border: 3px dashed #667eea;
-            border-radius: 15px;
-            padding: 40px;
-            text-align: center;
-            margin-bottom: 30px;
             transition: all 0.3s ease;
             cursor: pointer;
-        }
-
-        .upload-section:hover {
-            border-color: #764ba2;
-            background: rgba(102, 126, 234, 0.05);
-            transform: translateY(-2px);
-        }
-
-        .upload-section.dragover {
-            border-color: #764ba2;
-            background: rgba(102, 126, 234, 0.1);
-            transform: scale(1.02);
-        }
-
-        #fileInput {
-            display: none;
-        }
-
-        .upload-text {
-            font-size: 1.2rem;
-            color: #666;
-            margin-bottom: 15px;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 30px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn.secondary {
-            background: linear-gradient(135deg, #28a745, #20c997);
-        }
-
-        .btn.danger {
-            background: linear-gradient(135deg, #dc3545, #c82333);
-        }
-
-        .file-info {
-            margin: 15px 0;
-            padding: 20px;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 15px;
-            font-weight: 600;
-            display: none;
-        }
-
-        .progress-container {
-            display: none;
-            margin: 30px 0;
-            padding: 25px;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 15px;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 25px;
-            background: #f0f0f0;
-            border-radius: 15px;
-            overflow: hidden;
-            margin-bottom: 15px;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .progress-fill {
             height: 100%;
-            background: linear-gradient(135deg, #28a745, #20c997);
-            width: 0%;
-            transition: width 0.5s ease;
-            border-radius: 15px;
-        }
-
-        .status {
-            text-align: center;
-            margin: 15px 0;
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-
-        .stats {
             display: flex;
-            justify-content: space-around;
-            margin: 20px 0;
-            text-align: center;
+            flex-direction: column;
+            justify-content: center;
         }
-
-        .stat-item {
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 10px;
-            min-width: 120px;
+        .upload-zone:hover {
+            border-color: #206bc4;
+            background: rgba(32, 107, 196, 0.05);
         }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #333;
+        .upload-zone.dragover {
+            border-color: #206bc4;
+            background: rgba(32, 107, 196, 0.1);
         }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: #666;
-            margin-top: 5px;
-        }
-
-        .results {
-            margin-top: 30px;
+        .results-table {
             display: none;
         }
-
-        .results h3 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 1.5rem;
+        .page-section {
+            display: none;
         }
-
-        .domain-list {
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            padding: 20px;
-            background: #f9f9f9;
-            font-family: 'SF Mono', Consolas, monospace;
-            font-size: 0.9rem;
-        }
-
-        .domain-item {
-            padding: 12px 0;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
-        .domain-item:last-child {
-            border-bottom: none;
-        }
-
-        .domain-info {
-            flex: 1;
-            margin-right: 15px;
-        }
-
-        .domain-name {
-            font-weight: 600;
+        .page-section.active {
             display: block;
-            margin-bottom: 5px;
         }
-
-        .domain-evidence {
-            font-size: 0.8rem;
-            color: #666;
-            font-style: italic;
-            line-height: 1.3;
+        .confidence-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            color: white !important;
         }
-
-        .domain-status {
-            font-size: 0.8rem;
-            padding: 3px 8px;
-            border-radius: 12px;
-            background: #28a745;
-            color: white;
-            white-space: nowrap;
-            flex-shrink: 0;
+        .score-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            color: white !important;
         }
-
-        .controls {
+        .file-info-panel {
+            height: 100%;
             display: flex;
-            gap: 15px;
+            flex-direction: column;
             justify-content: center;
-            margin: 20px 0;
-            align-items: center;
         }
-
-        .method-selector {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 10px 15px;
-            border-radius: 10px;
-            border: 1px solid #ddd;
+        .sortable {
+            user-select: none;
         }
-
-        .method-selector label {
-            font-weight: 600;
-            color: #333;
-            font-size: 0.9rem;
-        }
-
-        .method-selector select {
-            padding: 5px 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background: white;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
-            font-weight: 600;
-        }
-
-        .alert.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .alert.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .sortable:hover {
+            background-color: rgba(0, 0, 0, 0.05);
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>🌐 Umbraco CMS Detector</h1>
-        <div class="subtitle">Advanced Umbraco detection with evidence analysis</div>
-        
-        <div class="upload-section" id="uploadSection">
-            <div class="upload-text">📁 Drag & drop your CSV file here or click to browse<br><small>Note: Domains will be read from the 3rd column</small></div>
-            <button class="btn" onclick="document.getElementById('fileInput').click()">Choose CSV File</button>
-            <input type="file" id="fileInput" accept=".csv" />
-        </div>
-
-        <div id="fileInfo" class="file-info"></div>
-        <div id="alerts"></div>
-
-        <div class="controls">
-            <div class="method-selector">
-                <label for="checkMethod">Detection Method:</label>
-                <select id="checkMethod">
-                    <option value="http">🚀 Lightweight HTTP (Recommended)</option>
-                </select>
-            </div>
-            <button id="checkBtn" class="btn" style="display: none;" onclick="startChecking()">
-                🚀 Start Checking Domains
-            </button>
-            <button id="stopBtn" class="btn danger" style="display: none;" onclick="stopChecking()">
-                ⏹️ Stop Checking
-            </button>
-        </div>
-
-        <div class="progress-container" id="progressContainer">
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
-            <div class="status" id="status"></div>
-            <div class="stats">
-                <div class="stat-item">
-                    <div class="stat-number" id="totalCount">0</div>
-                    <div class="stat-label">Total</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="checkedCount">0</div>
-                    <div class="stat-label">Checked</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="successCount">0</div>
-                    <div class="stat-label">Success (200)</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="results" id="results">
-            <h3>✅ Umbraco CMS Detected</h3>
-            <div class="domain-list" id="successList"></div>
-            <div class="controls">
-                <button class="btn secondary" id="downloadBtn" onclick="downloadResults()">
-                    💾 Download Umbraco Results CSV
+<body class="page-wrapper">
+    <div class="page">
+        <!-- Navigation -->
+        <header class="navbar navbar-expand-md navbar-dark">
+            <div class="container-xl">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+                    <span class="navbar-toggler-icon"></span>
                 </button>
+                <h1 class="navbar-brand navbar-brand-autodark">
+                    <a href="#" class="nav-link">
+                        <span class="text-primary">Blue</span><span class="text-white">Detect</span>
+                    </a>
+                </h1>
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown">
+                            <span class="avatar avatar-sm" style="background-image: url(https://ui-avatars.com/api/?name=User&background=206bc4&color=fff)"></span>
+                        </a>
+                    </div>
+                </div>
+                <div class="collapse navbar-collapse" id="navbar-menu">
+                    <div class="d-flex flex-column flex-md-row flex-fill align-items-stretch align-items-md-center">
+                        <ul class="navbar-nav">
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('home')">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><polyline points="5,12 3,12 12,3 21,12 19,12" /><path d="M5,12v7a2,2 0 0,0 2,2h10a2,2 0 0,0 2,-2v-7" /><path d="M9,21v-6a2,2 0 0,1 2,-2h2a2,2 0 0,1 2,2v6" /></svg>
+                                    </span>
+                                    <span class="nav-link-title">Home</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('results')">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="9" cy="19" r="2" /><circle cx="20" cy="19" r="2" /><path d="M1,1h4l2.68,13.39a2,2 0 0,0 2,1.61h9.72a2,2 0 0,0 2,-1.61L23,6H6" /></svg>
+                                    </span>
+                                    <span class="nav-link-title">Results</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('detection')">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10,10m-7,0a7,7 0 1,0 14,0a7,7 0 1,0 -14,0" /><path d="M21,21l-6,-6" /></svg>
+                                    </span>
+                                    <span class="nav-link-title">Detection</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Home Page -->
+        <div id="home-page" class="page-section active">
+            <div class="page-header">
+                <div class="container-xl">
+                    <div class="row g-2 align-items-center">
+                        <div class="col">
+                            <h2 class="page-title">Umbraco CMS Detector</h2>
+                            <div class="text-muted mt-1">Advanced Umbraco detection with evidence analysis</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page-body">
+                <div class="container-xl">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <!-- Upload Zone - 1/3 width -->
+                                        <div class="col-md-4">
+                                            <div class="upload-zone" id="uploadSection">
+                                                <div class="mb-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                        <path d="M14,3v4a1,1 0 0,0 1,1h4" />
+                                                        <path d="M17,21h-10a2,2 0 0,1 -2,-2v-14a2,2 0 0,1 2,-2h7l5,5v11a2,2 0 0,1 -2,2z" />
+                                                        <line x1="12" y1="11" x2="12" y2="17" />
+                                                        <polyline points="9,14 12,11 15,14" />
+                                                    </svg>
+                                                </div>
+                                                <h3 class="card-title">Upload CSV File</h3>
+                                                <p class="text-muted">Drag & drop your CSV file here or click to browse</p>
+                                                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                                                    Choose CSV File
+                                                </button>
+                                                <input type="file" id="fileInput" accept=".csv" style="display: none;" />
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- File Info Panel - 2/3 width -->
+                                        <div class="col-md-8">
+                                            <div class="file-info-panel">
+                                                <div id="fileInfo" class="card" style="display: none;">
+                                                    <div class="card-body text-center">
+                                                        <div class="mb-3">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-success" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                                <path d="M14,3v4a1,1 0 0,0 1,1h4" />
+                                                                <path d="M17,21h-10a2,2 0 0,1 -2,-2v-14a2,2 0 0,1 2,-2h7l5,5v11a2,2 0 0,1 -2,2z" />
+                                                                <path d="M9,9l1,1l3,-3" />
+                                                            </svg>
+                                                        </div>
+                                                        <h4 class="card-title">File Uploaded</h4>
+                                                        <div id="fileDetails" class="text-muted"></div>
+                                                        <div class="mt-3">
+                                                            <button id="checkBtn" class="btn btn-success" style="display: none;" onclick="startChecking()">
+                                                                🚀 Start Checking Domains
+                                                            </button>
+                                                            <button id="stopBtn" class="btn btn-danger" style="display: none;" onclick="stopChecking()">
+                                                                ⏹️ Stop Checking
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div id="progressContainer" style="display: none;">
+                                                    <div class="card">
+                                                        <div class="card-body">
+                                                            <div class="progress mb-3">
+                                                                <div class="progress-bar" id="progressFill" style="width: 0%"></div>
+                                                            </div>
+                                                            <div class="text-center mb-3" id="status"></div>
+                                                            <div class="row">
+                                                                <div class="col-4">
+                                                                    <div class="text-center">
+                                                                        <div class="h3 m-0" id="totalCount">0</div>
+                                                                        <div class="text-muted small">Total</div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-4">
+                                                                    <div class="text-center">
+                                                                        <div class="h3 m-0" id="checkedCount">0</div>
+                                                                        <div class="text-muted small">Checked</div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-4">
+                                                                    <div class="text-center">
+                                                                        <div class="h3 m-0" id="successCount">0</div>
+                                                                        <div class="text-muted small">Found</div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="alerts"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Page -->
+        <div id="results-page" class="page-section">
+            <div class="page-header">
+                <div class="container-xl">
+                    <div class="row g-2 align-items-center">
+                        <div class="col">
+                            <h2 class="page-title">Detection Results</h2>
+                            <div class="text-muted mt-1">Umbraco sites detected from your scan</div>
+                        </div>
+                        <div class="col-auto ms-auto d-print-none">
+                            <button class="btn btn-primary" id="exportBtn" onclick="exportToCSV()" style="display: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M14,3v4a1,1 0 0,0 1,1h4" />
+                                    <path d="M17,21h-10a2,2 0 0,1 -2,-2v-14a2,2 0 0,1 2,-2h7l5,5v11a2,2 0 0,1 -2,2z" />
+                                    <line x1="12" y1="11" x2="12" y2="17" />
+                                    <polyline points="9,14 12,11 15,14" />
+                                </svg>
+                                Export CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page-body">
+                <div class="container-xl">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="results-table" class="table-responsive">
+                                <table class="table table-vcenter card-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th onclick="sortTable('domain')" style="cursor: pointer;" class="sortable">
+                                                Domain Name
+                                            </th>
+                                            <th>Company Name</th>
+                                            <th onclick="sortTable('umbraco')" style="cursor: pointer;" class="sortable">
+                                                Umbraco
+                                            </th>
+                                            <th onclick="sortTable('score')" style="cursor: pointer;" class="sortable">
+                                                Score
+                                            </th>
+                                            <th onclick="sortTable('confidence')" style="cursor: pointer;" class="sortable">
+                                                Confidence
+                                            </th>
+                                            <th>Reason</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="resultsTableBody">
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted">No results yet. Start a scan to see detected Umbraco sites.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detection Page -->
+        <div id="detection-page" class="page-section">
+            <div class="page-header">
+                <div class="container-xl">
+                    <div class="row g-2 align-items-center">
+                        <div class="col">
+                            <h2 class="page-title">Detection Methods</h2>
+                            <div class="text-muted mt-1">How BlueDetect identifies Umbraco CMS</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page-body">
+                <div class="container-xl">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Weighted Scoring System</h3>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">BlueDetect uses a comprehensive weighted scoring system to identify Umbraco CMS installations. A minimum score of 3 points is required for positive detection.</p>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h4 class="card-title text-success">Primary Indicators (3 points each)</h4>
+                                                </div>
+                                                <div class="card-body">
+                                                    <ul class="list list-timeline">
+                                                        <li>
+                                                            <div class="list-timeline-icon bg-success"></div>
+                                                            <div class="list-timeline-content">
+                                                                <div class="list-timeline-title">Admin Path Detection</div>
+                                                                <div class="text-muted">/umbraco/ path accessibility</div>
+                                                            </div>
+                                                        </li>
+                                                        <li>
+                                                            <div class="list-timeline-icon bg-success"></div>
+                                                            <div class="list-timeline-content">
+                                                                <div class="list-timeline-title">Umbraco File Paths</div>
+                                                                <div class="text-muted">/App_Plugins/, /umbraco_client/, /Views/</div>
+                                                            </div>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h4 class="card-title text-warning">Secondary Indicators (2 points each)</h4>
+                                                </div>
+                                                <div class="card-body">
+                                                    <ul class="list list-timeline">
+                                                        <li>
+                                                            <div class="list-timeline-icon bg-warning"></div>
+                                                            <div class="list-timeline-content">
+                                                                <div class="list-timeline-title">ASP.NET/IIS Headers</div>
+                                                                <div class="text-muted">x-aspnet-version, x-powered-by</div>
+                                                            </div>
+                                                        </li>
+                                                        <li>
+                                                            <div class="list-timeline-icon bg-warning"></div>
+                                                            <div class="list-timeline-content">
+                                                                <div class="list-timeline-title">Directory Structures</div>
+                                                                <div class="text-muted">App_Plugins, umbraco_client</div>
+                                                            </div>
+                                                        </li>
+                                                        <li>
+                                                            <div class="list-timeline-icon bg-warning"></div>
+                                                            <div class="list-timeline-content">
+                                                                <div class="list-timeline-title">Client Dependency Framework</div>
+                                                                <div class="text-muted">umbraco.clientdependency patterns</div>
+                                                            </div>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h4 class="card-title text-info">Tertiary Indicators (1 point each)</h4>
+                                                </div>
+                                                <div class="card-body">
+                                                    <ul class="list list-timeline">
+                                                        <li>
+                                                            <div class="list-timeline-icon bg-info"></div>
+                                                            <div class="list-timeline-content">
+                                                                <div class="list-timeline-title">ASPX Extensions</div>
+                                                                <div class="text-muted">.NET application patterns</div>
+                                                            </div>
+                                                        </li>
+                                                        <li>
+                                                            <div class="list-timeline-icon bg-info"></div>
+                                                            <div class="list-timeline-content">
+                                                                <div class="list-timeline-title">HTML Elements</div>
+                                                                <div class="text-muted">Umbraco-specific CSS classes</div>
+                                                            </div>
+                                                        </li>
+                                                        <li>
+                                                            <div class="list-timeline-icon bg-info"></div>
+                                                            <div class="list-timeline-content">
+                                                                <div class="list-timeline-title">JavaScript References</div>
+                                                                <div class="text-muted">umbraco.js, umbraco_client</div>
+                                                            </div>
+                                                        </li>
+                                                        <li>
+                                                            <div class="list-timeline-icon bg-info"></div>
+                                                            <div class="list-timeline-content">
+                                                                <div class="list-timeline-title">Text Patterns</div>
+                                                                <div class="text-muted">General Umbraco mentions</div>
+                                                            </div>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Exclusion System</h3>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">BlueDetect automatically excludes sites that use other CMS platforms by checking meta generator tags for:</p>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h5>Traditional CMS</h5>
+                                            <ul>
+                                                <li>WordPress, Drupal, Joomla</li>
+                                                <li>TYPO3, MODX, Concrete5</li>
+                                                <li>ProcessWire, Craft CMS</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h5>E-commerce & Builders</h5>
+                                            <ul>
+                                                <li>Magento, Shopify, WooCommerce</li>
+                                                <li>Wix, Squarespace, Webflow</li>
+                                                <li>Static generators (Jekyll, Hugo)</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/js/tabler.min.js"></script>
     <script>
         let uploadedFileName = '';
         let checkJobId = '';
+        let resultsData = []; // Store results for data table
+
+        // Navigation functions
+        function showPage(pageName) {
+            // Hide all pages
+            document.querySelectorAll('.page-section').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Show selected page
+            document.getElementById(pageName + '-page').classList.add('active');
+            
+            // Update navigation active state
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Find and activate the correct nav link
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                if (link.getAttribute('onclick') && link.getAttribute('onclick').includes(pageName)) {
+                    link.classList.add('active');
+                }
+            });
+        }
 
         // File upload handling
         const uploadSection = document.getElementById('uploadSection');
@@ -429,10 +533,149 @@ app.get('/', (req, res) => {
 
         function showAlert(message, type = 'error') {
             const alert = document.createElement('div');
-            alert.className = \`alert \${type}\`;
+            alert.className = \`alert alert-\${type === 'error' ? 'danger' : type}\`;
             alert.textContent = message;
             alerts.appendChild(alert);
             setTimeout(() => alert.remove(), 5000);
+        }
+
+        // Data table functions
+        let currentSort = { column: null, direction: 'asc' };
+        let sortedResultsData = [];
+
+        function updateResultsTable() {
+            const tbody = document.getElementById('resultsTableBody');
+            const exportBtn = document.getElementById('exportBtn');
+            
+            if (resultsData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No results yet. Start a scan to see detected Umbraco sites.</td></tr>';
+                exportBtn.style.display = 'none';
+                return;
+            }
+            
+            // Use sorted data if available, otherwise use original data
+            const dataToDisplay = sortedResultsData.length > 0 ? sortedResultsData : resultsData;
+            
+            tbody.innerHTML = '';
+            dataToDisplay.forEach((result, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = \`
+                    <td>\${index + 1}</td>
+                    <td><strong>\${result.domain}</strong></td>
+                    <td>\${result.companyName || 'N/A'}</td>
+                    <td><span class="badge bg-success">Yes</span></td>
+                    <td><span class="badge score-badge bg-primary">\${result.score}</span></td>
+                    <td><span class="badge confidence-badge bg-\${result.confidence === 'high' ? 'success' : result.confidence === 'medium' ? 'warning' : 'info'}">\${result.confidence}</span></td>
+                    <td><small class="text-muted">\${result.reason}</small></td>
+                \`;
+                tbody.appendChild(row);
+            });
+            
+            exportBtn.style.display = 'inline-block';
+        }
+
+        function sortTable(column) {
+            // Determine sort direction
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+
+            // Create a copy of the data for sorting
+            sortedResultsData = [...resultsData];
+
+            // Sort based on column
+            sortedResultsData.sort((a, b) => {
+                let aVal, bVal;
+                
+                switch (column) {
+                    case 'domain':
+                        aVal = a.domain.toLowerCase();
+                        bVal = b.domain.toLowerCase();
+                        break;
+                    case 'umbraco':
+                        // Group Umbraco results (all are "Yes" so this is mainly for consistency)
+                        aVal = 'Yes';
+                        bVal = 'Yes';
+                        break;
+                    case 'score':
+                        aVal = parseInt(a.score);
+                        bVal = parseInt(b.score);
+                        break;
+                    case 'confidence':
+                        // Sort by confidence level: high > medium > low
+                        const confidenceOrder = { 'high': 3, 'medium': 2, 'low': 1 };
+                        aVal = confidenceOrder[a.confidence] || 0;
+                        bVal = confidenceOrder[b.confidence] || 0;
+                        break;
+                    default:
+                        return 0;
+                }
+
+                // Compare values
+                if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            // Update table headers with sort indicators
+            updateSortHeaders();
+            
+            // Refresh the table
+            updateResultsTable();
+        }
+
+        function updateSortHeaders() {
+            // Remove all sort indicators
+            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                indicator.remove();
+            });
+
+            // Add sort indicator to current column
+            if (currentSort.column) {
+                const header = document.querySelector(\`th[onclick*="\${currentSort.column}"]\`);
+                if (header) {
+                    const indicator = document.createElement('span');
+                    indicator.className = 'sort-indicator ms-1';
+                    indicator.innerHTML = currentSort.direction === 'asc' ? '↑' : '↓';
+                    header.appendChild(indicator);
+                }
+            }
+        }
+
+        function exportToCSV() {
+            if (resultsData.length === 0) {
+                showAlert('No results to export', 'warning');
+                return;
+            }
+            
+            const headers = ['Number', 'Domain Name', 'Company Name', 'Umbraco', 'Score', 'Confidence', 'Reason'];
+            const csvContent = [
+                headers.join(','),
+                ...resultsData.map((result, index) => [
+                    index + 1,
+                    result.domain,
+                    result.companyName || 'N/A',
+                    'Yes',
+                    result.score,
+                    result.confidence,
+                    \`"\${result.reason.replace(/"/g, '""')}"\`
+                ].join(','))
+            ].join('\\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'bluedetect_umbraco_results.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showAlert('Results exported successfully!', 'success');
         }
 
         // Drag and drop events
@@ -479,7 +722,11 @@ app.get('/', (req, res) => {
 
                 if (response.ok) {
                     uploadedFileName = result.filename;
-                    fileInfo.innerHTML = \`📄 <strong>\${file.name}</strong> - \${result.domainCount} domains loaded\`;
+                    document.getElementById('fileDetails').innerHTML = \`
+                        <p><strong>\${file.name}</strong></p>
+                        <p class="h2 text-primary">\${result.domainCount}</p>
+                        <p>domains detected</p>
+                    \`;
                     fileInfo.style.display = 'block';
                     checkBtn.style.display = 'inline-block';
                     showAlert(\`File uploaded successfully! \${result.domainCount} domains found.\`, 'success');
@@ -497,15 +744,13 @@ app.get('/', (req, res) => {
                 return;
             }
 
-            const checkMethod = document.getElementById('checkMethod').value;
-
             try {
                 const response = await fetch('/check', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         filename: uploadedFileName,
-                        method: checkMethod
+                        method: 'http'
                     })
                 });
 
@@ -514,6 +759,7 @@ app.get('/', (req, res) => {
                 if (response.ok) {
                     checkJobId = result.jobId;
                     document.getElementById('progressContainer').style.display = 'block';
+                    document.getElementById('fileInfo').style.display = 'none';
                     document.getElementById('checkBtn').style.display = 'none';
                     document.getElementById('stopBtn').style.display = 'inline-block';
                     document.getElementById('totalCount').textContent = result.totalDomains;
@@ -550,11 +796,13 @@ app.get('/', (req, res) => {
                     updateProgress(progress);
                     
                     if (progress.status === 'completed' || progress.status === 'stopped') {
+                        document.getElementById('fileInfo').style.display = 'block';
                         document.getElementById('checkBtn').style.display = 'inline-block';
                         document.getElementById('stopBtn').style.display = 'none';
+                        document.getElementById('progressContainer').style.display = 'none';
                         
                         if (progress.status === 'completed') {
-                            showAlert(\`Checking completed! \${progress.successCount} domains responded with 200.\`, 'success');
+                            showAlert(\`Checking completed! \${progress.successCount} Umbraco sites found.\`, 'success');
                         }
                     } else {
                         // Continue polling
@@ -574,14 +822,12 @@ app.get('/', (req, res) => {
             const status = document.getElementById('status');
             const checkedCount = document.getElementById('checkedCount');
             const successCount = document.getElementById('successCount');
-            const successList = document.getElementById('successList');
-            const results = document.getElementById('results');
 
             const percentage = progress.total > 0 ? (progress.checked / progress.total) * 100 : 0;
             progressFill.style.width = percentage + '%';
             
             if (progress.currentDomain) {
-                status.innerHTML = \`<div class="loading-spinner"></div>Checking: \${progress.currentDomain}\`;
+                status.innerHTML = \`<div class="spinner-border spinner-border-sm me-2" role="status"></div>Checking: \${progress.currentDomain}\`;
             } else {
                 status.textContent = progress.status === 'completed' ? 'Checking completed!' : 
                                    progress.status === 'stopped' ? 'Checking stopped.' : 'Processing...';
@@ -590,70 +836,35 @@ app.get('/', (req, res) => {
             checkedCount.textContent = progress.checked;
             successCount.textContent = progress.successCount;
 
-            // Update successful domains list with evidence
-            successList.innerHTML = '';
+            // Update results data table
             if (progress.successfulDomainsWithEvidence && progress.successfulDomainsWithEvidence.length > 0) {
-                progress.successfulDomainsWithEvidence.forEach(item => {
-                    const domainItem = document.createElement('div');
-                    domainItem.className = 'domain-item';
-                    domainItem.innerHTML = \`
-                        <div class="domain-info">
-                            <span class="domain-name">\${item.domain}</span>
-                            <div class="domain-evidence">\${item.evidence.join('; ')}</div>
-                        </div>
-                        <span class="domain-status">Umbraco ✓</span>
-                    \`;
-                    successList.appendChild(domainItem);
+                resultsData = progress.successfulDomainsWithEvidence.map(item => {
+                    // Extract score and confidence from evidence
+                    const scoreMatch = item.evidence[0]?.match(/Score: (\\d+)/);
+                    const confidenceMatch = item.evidence[0]?.match(/Confidence: (\\w+)/);
+                    const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
+                    const confidence = confidenceMatch ? confidenceMatch[1] : 'low';
+                    const reason = item.evidence.slice(1).join('; ') || 'Umbraco detected';
+                    
+                    return {
+                        domain: item.domain,
+                        companyName: null, // Could be enhanced to extract from CSV
+                        score: score,
+                        confidence: confidence,
+                        reason: reason
+                    };
                 });
-            } else if (progress.successfulDomains && progress.successfulDomains.length > 0) {
-                // Fallback for backward compatibility
-                progress.successfulDomains.forEach(domain => {
-                    const domainItem = document.createElement('div');
-                    domainItem.className = 'domain-item';
-                    domainItem.innerHTML = \`
-                        <div class="domain-info">
-                            <span class="domain-name">\${domain}</span>
-                            <div class="domain-evidence">Evidence not available</div>
-                        </div>
-                        <span class="domain-status">200 OK</span>
-                    \`;
-                    successList.appendChild(domainItem);
-                });
+                updateResultsTable();
             }
 
-            if (progress.successfulDomains.length > 0) {
-                results.style.display = 'block';
+            // Show results page when scan completes
+            if (progress.status === 'completed' && progress.successCount > 0) {
+                showPage('results');
             }
         }
 
-        async function downloadResults() {
-            if (!checkJobId) {
-                showAlert('No results to download.');
-                return;
-            }
-
-            try {
-                const response = await fetch(\`/download/\${checkJobId}\`);
-                
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'successful_domains.csv';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    showAlert('Results downloaded successfully!', 'success');
-                } else {
-                    const result = await response.json();
-                    showAlert(result.error || 'Download failed');
-                }
-            } catch (error) {
-                showAlert('Download failed: ' + error.message);
-            }
-        }
+        // Initialize results table on page load
+        updateResultsTable();
     </script>
 </body>
 </html>
@@ -1047,77 +1258,217 @@ async function makeHTTPRequest(url, isHTTPS, redirectCount = 0) {
   });
 }
 
-// Analyze response for Umbraco indicators
+// Analyze response for Umbraco indicators using weighted scoring system
 function analyzeResponseForUmbraco(content, headers, statusCode, url) {
   let evidence = [];
-  let matchCount = 0;
+  let score = 0;
+  let confidence = 'low';
   
   // Check status code
   if (statusCode !== 200) {
     return { isUmbraco: false, evidence: ['Status code: ' + statusCode] };
   }
 
-  // Method 1: Check for .aspx extensions (common in Umbraco)
-  if (url.includes('.aspx') || content.includes('.aspx')) {
-    matchCount++;
-    evidence.push('Found .aspx extensions (common in Umbraco)');
+  // EXCLUSION CHECK: Meta generator tag analysis
+  const metaGeneratorMatch = content.match(/<meta\s+name=['"]generator['"]\s+content=['"]([^'"]+)['"]/i);
+  if (metaGeneratorMatch) {
+    const generator = metaGeneratorMatch[1].toLowerCase();
+    
+    // List of non-Umbraco CMS generators
+    const nonUmbracoGenerators = [
+      // Traditional CMS
+      'wordpress', 'drupal', 'joomla', 'typo3', 'modx', 'concrete5', 'textpattern', 
+      'processwire', 'craft cms', 'expressionengine',
+      // E-commerce CMS
+      'magento', 'opencart', 'prestashop', 'woocommerce', 'shopify', 'bigcommerce',
+      // Static Site Generators
+      'jekyll', 'hugo', 'gatsby', 'next.js', 'nuxt.js', 'hexo', 'pelican', 'middleman',
+      // Website Builders
+      'wix.com', 'squarespace', 'weebly', 'webflow',
+      // Wiki & Documentation
+      'mediawiki', 'dokuwiki', 'tiddlywiki', 'gitiles',
+      // Blogging Platforms
+      'ghost', 'blogger', 'tumblr',
+      // Enterprise CMS
+      'sitecore', 'adobe experience manager', 'episerver', 'optimizely', 'kentico',
+      // Headless/API-first CMS
+      'contentful', 'strapi', 'sanity',
+      // Forum/Community Software
+      'phpbb', 'vbulletin', 'xenforo', 'discourse'
+    ];
+    
+    const isNonUmbraco = nonUmbracoGenerators.some(nonUmbraco => 
+      generator.includes(nonUmbraco)
+    );
+    
+    if (isNonUmbraco) {
+      return { 
+        isUmbraco: false, 
+        evidence: [`EXCLUDED: Meta generator indicates non-Umbraco CMS: ${metaGeneratorMatch[1]}`] 
+      };
+    }
+  }
+
+  // PRIMARY INDICATORS (High Confidence - 3 points each)
+  
+  // 1. Admin Path Detection - /umbraco/ path accessibility
+  if (url.includes('/umbraco/') || url.includes('/umbraco')) {
+    score += 3;
+    evidence.push('PRIMARY: Admin path /umbraco/ detected');
   }
   
-  // Method 2: Check for Umbraco-specific text patterns
-  const umbracoPatterns = [
+  // 2. Umbraco-specific file paths
+  const umbracoPaths = [
+    '/App_Plugins/',
+    '/umbraco_client/',
+    '/Views/',
+    '/umbraco/umbraco.aspx',
+    '/umbraco/login.aspx',
+    '/umbraco/dashboard.aspx'
+  ];
+  
+  const foundPaths = umbracoPaths.filter(path => 
+    url.includes(path) || content.includes(path)
+  );
+  
+  if (foundPaths.length > 0) {
+    score += 3;
+    evidence.push(`PRIMARY: Umbraco file paths detected: ${foundPaths.join(', ')}`);
+  }
+
+  // SECONDARY INDICATORS (Medium Confidence - 2 points each)
+  
+  // 3. ASP.NET/IIS server signatures
+  const aspNetHeaders = [
+    'x-aspnet-version',
+    'x-aspnetmvc-version',
+    'x-powered-by'
+  ];
+  
+  const foundAspNetHeaders = aspNetHeaders.filter(header => 
+    headers[header] || Object.keys(headers).some(key => 
+      key.toLowerCase().includes(header.toLowerCase())
+    )
+  );
+  
+  if (foundAspNetHeaders.length > 0) {
+    score += 2;
+    evidence.push(`SECONDARY: ASP.NET/IIS headers detected: ${foundAspNetHeaders.join(', ')}`);
+  }
+  
+  // 4. Umbraco-specific directory structures in content
+  const umbracoDirs = [
+    'App_Plugins',
+    'umbraco_client',
+    'umbraco/Views',
+    'umbraco/App_Plugins',
+    'umbraco/umbraco'
+  ];
+  
+  const foundDirs = umbracoDirs.filter(dir => 
+    content.includes(dir) || content.includes(`/${dir}/`)
+  );
+  
+  if (foundDirs.length > 0) {
+    score += 2;
+    evidence.push(`SECONDARY: Umbraco directory structures: ${foundDirs.join(', ')}`);
+  }
+  
+  // 5. Client Dependency Framework patterns
+  const cdfPatterns = [
+    'umbraco.clientdependency',
+    'umbraco_client',
+    'ClientDependency',
+    'umbraco.css',
+    'umbraco.js'
+  ];
+  
+  const foundCdfPatterns = cdfPatterns.filter(pattern => 
+    content.toLowerCase().includes(pattern.toLowerCase())
+  );
+  
+  if (foundCdfPatterns.length > 0) {
+    score += 2;
+    evidence.push(`SECONDARY: Client Dependency Framework patterns: ${foundCdfPatterns.join(', ')}`);
+  }
+
+  // TERTIARY INDICATORS (Low Confidence - 1 point each)
+  
+  // 6. Generic .NET application patterns
+  if (content.includes('.aspx') || url.includes('.aspx')) {
+    score += 1;
+    evidence.push('TERTIARY: ASPX extensions detected (.NET application)');
+  }
+  
+  // 7. Umbraco-specific CSS classes and HTML elements
+  const umbracoElements = [
+    'class="umbraco',
+    'id="umbraco',
+    '<umbraco',
+    'umbraco-login',
+    'umbraco-dashboard',
+    'umbraco-content'
+  ];
+  
+  const foundElements = umbracoElements.filter(element => 
+    content.includes(element)
+  );
+  
+  if (foundElements.length > 0) {
+    score += 1;
+    evidence.push(`TERTIARY: Umbraco HTML elements: ${foundElements.join(', ')}`);
+  }
+  
+  // 8. Umbraco-specific JavaScript references
+  const umbracoJs = [
+    'umbraco.js',
+    'umbraco.min.js',
+    'umbraco_client',
+    'umbraco/scripts'
+  ];
+  
+  const foundJs = umbracoJs.filter(js => 
+    content.toLowerCase().includes(js.toLowerCase())
+  );
+  
+  if (foundJs.length > 0) {
+    score += 1;
+    evidence.push(`TERTIARY: Umbraco JavaScript references: ${foundJs.join(', ')}`);
+  }
+  
+  // 9. Umbraco-specific text patterns
+  const umbracoTextPatterns = [
     'umbraco',
     'Umbraco',
     'UMBRACO',
     'umbraco.aspx',
-    'umbraco/umbraco.aspx',
     'umbraco-login',
     'umbraco-dashboard'
   ];
   
-  const foundPatterns = umbracoPatterns.filter(pattern => 
+  const foundTextPatterns = umbracoTextPatterns.filter(pattern => 
     content.toLowerCase().includes(pattern.toLowerCase())
   );
   
-  if (foundPatterns.length > 0) {
-    matchCount++;
-    evidence.push(`Found Umbraco text patterns: ${foundPatterns.join(', ')}`);
-  }
-  
-  // Method 3: Check response headers for Umbraco indicators
-  const umbracoHeaders = Object.keys(headers).filter(key => 
-    key.toLowerCase().includes('umbraco')
-  );
-  if (umbracoHeaders.length > 0) {
-    matchCount++;
-    evidence.push(`Found Umbraco headers: ${umbracoHeaders.join(', ')}`);
-  }
-  
-  // Method 4: Check for Umbraco-specific HTML elements
-  if (content.includes('<umbraco') || 
-      content.includes('class="umbraco') || 
-      content.includes('id="umbraco') ||
-      content.includes('umbraco-login') ||
-      content.includes('umbraco-dashboard')) {
-    matchCount++;
-    evidence.push('Found Umbraco-specific HTML elements');
-  }
-  
-  // Method 5: Check for Umbraco admin interface elements
-  if (content.includes('umbraco.aspx') || 
-      content.includes('umbraco/umbraco.aspx') ||
-      content.includes('umbraco-login') ||
-      content.includes('umbraco-dashboard')) {
-    matchCount++;
-    evidence.push('Found Umbraco admin interface elements');
+  if (foundTextPatterns.length > 0) {
+    score += 1;
+    evidence.push(`TERTIARY: Umbraco text patterns: ${foundTextPatterns.join(', ')}`);
   }
 
-  // Require at least 2 matches to confirm Umbraco
-  const isUmbraco = matchCount >= 2;
+  // Determine confidence level and final result
+  if (score >= 6) {
+    confidence = 'high';
+  } else if (score >= 3) {
+    confidence = 'medium';
+  }
+  
+  // Require minimum score for Umbraco detection
+  const isUmbraco = score >= 3;
   
   if (isUmbraco) {
-    evidence.unshift(`Umbraco detected (${matchCount}/5 checks passed)`);
+    evidence.unshift(`Umbraco detected (Score: ${score}, Confidence: ${confidence})`);
   } else {
-    evidence.unshift(`Not Umbraco (${matchCount}/5 checks passed, need 2+)`);
+    evidence.unshift(`Not Umbraco (Score: ${score}, need 3+ points)`);
   }
 
   return { isUmbraco, evidence };
@@ -1149,6 +1500,6 @@ setInterval(() => {
 }, 60 * 60 * 1000); // Run cleanup every hour
 
 app.listen(PORT, () => {
-  console.log(`🚀 Domain CSV Checker running on http://localhost:${PORT}`);
+  console.log(`🚀 BlueDetect - Umbraco CMS Detector running on http://localhost:${PORT}`);
   console.log('📁 Upload a CSV file with domain names to get started!');
 });
